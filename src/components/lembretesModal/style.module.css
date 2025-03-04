@@ -1,0 +1,130 @@
+.expandedModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  
+  .expandedModalContent {
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 500px; /* ou qualquer tamanho que você preferir */
+    max-height: 80vh;
+    overflow-y: auto; /* para rolagem se o conteúdo for muito longo */
+  }
+  
+  .expandedModalContent img {
+    width: 100%;
+    height: auto; /* mantém a proporção da imagem */
+  }
+
+  .modalContent ul {
+    padding: 0; /* Removes default padding */
+  }
+
+  .lembreteItem {
+    position: relative;
+    padding: 10px; /* Espaçamento interno */
+    background: #fff; /* Cor de fundo */
+    margin-bottom: 10px; /* Espaçamento entre os itens */
+    border-radius: 10px; /* Bordas arredondadas */
+    
+  }
+  
+  .visualizadoIcon {
+    cursor: pointer;
+    color: #000;
+  }
+  
+  .visualizadoIcon:hover {
+    color: #3498db; /* Cor do ícone ao passar o mouse */
+  }
+  
+  
+
+  .modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .modalContent h3 {
+    margin: 0;
+    color: #333; /* Dark text color for the title */
+    font-size: 1.2em; /* Adjust the size as you like */
+  }
+  
+  .modalContent p {
+    margin: 5px 0 0; /* Only top margin */
+    color: #666; /* Lighter text color for the message */
+  }
+  
+  /* You might want to add some padding inside your modalContent to ensure the content isn't touching the edges */
+  /* .modalContent {
+    padding: 20px;
+  } */
+
+  .modalContent button.closeButton {
+    position: absolute; /* Positions the button absolutely within the modal */
+    top: 10px; /* 10px from the top */
+    right: 10px; /* 10px from the right */
+    background: none; /* Removes any background */
+    border: none; /* Removes the border */
+    font-size: 1.5em; /* Makes the '×' larger */
+    cursor: pointer; /* Changes the cursor to a pointer on hover */
+    padding: 0;
+    line-height: 1;
+    color: #333; /* Dark grey color, can change as needed */
+  }
+  
+  /* Hover and focus styles for the close button */
+  .modalContent button.closeButton:hover,
+  .modalContent button.closeButton:focus {
+    color: #ff0000; /* Changes color when hovered or focused */
+    text-decoration: none; /* Removes any text decoration */
+    outline: none; /* Removes the focus outline */
+  }
+  
+  /* Close button styling */
+  .modalContent button {
+    /* Your button styling */
+    cursor: pointer;
+  }
+
+  .modalContent li {
+    list-style-type: none; /* Removes bullet points */
+    background-color: #eef2f7; /* Light grey background */
+    padding: 10px;
+    margin-bottom: 10px; /* Adds space between the list items */
+    border-radius: 8px; /* Rounded corners */
+  }
+
+  
+  .modalContent {
+    background-color: #2c3e50;
+    color: #fff;
+    width: 50%;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modalContent li{
+    text-decoration-style: none;
+  }

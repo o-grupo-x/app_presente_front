@@ -1,0 +1,101 @@
+.lembreteIcon {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  left: 735px;
+}
+
+.lembreteCount {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: #2c3e50;
+  color: #fff;
+  width: 50%;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+
+.header {
+    background-color: white;
+    color: black;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0rem ;
+    box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .header-title {
+    font-size: 24px;
+    margin: 0;
+  }
+  
+  .header-icon {
+    cursor: pointer;
+  }
+  
+  .headerContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  
+  .userInfoAndHeader {
+    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+  }
+  .cabecalho_center{
+    margin-bottom: 120px;
+  }
+  
+  .cabecalho {
+    background-color: white;
+    color: black;
+    padding: 36px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+    margin: 0px 0px 0px 220px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+  
+  
+  
+  

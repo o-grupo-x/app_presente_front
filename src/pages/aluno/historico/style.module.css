@@ -1,0 +1,154 @@
+.page_content{
+    position: relative;
+    left: 220px;
+    width: calc(100% - 220px);
+    min-height: 100vh;
+    padding: 30px;
+    color: #171616;
+    /* background: #f0f1f6; */
+    font-family: 'Lato', sans-serif;
+}
+
+.inner_content{
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.div_content{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+}
+
+.dados{
+    width: 30%;
+    display: flex;
+    justify-content: space-evenly;
+    color: #203867;
+}
+
+.dados div{
+    text-align: center;
+}
+
+.dados div h1{
+    font-size: 30px;
+    margin: 0px;
+}
+
+.dados div p{
+    font-size: 30px;
+    margin: 10px;
+}
+
+.search_input{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 30%;
+}
+
+.search_input div input{
+    padding: 7px;
+    border-radius: 10px ; 
+    font-size: 16px; 
+    width: 250px; 
+    border: 1px solid black;
+}
+.search_input div{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search_input div div{
+    border: 1px solid black;
+    text-align: center;
+    width: 20%;
+    height: 2rem;
+    border-radius: 0px 10px 10px 0px;
+}
+
+.div_table{
+    width: 100%;
+}
+
+.tabela {
+    width: 90%;
+    border-radius: 0px;
+    border-collapse: collapse;
+    background-color: transparent;
+    text-align: center;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+   
+}
+
+.tabela tr{
+    height: 3rem;
+    background-color: #203867;
+    color: white;  
+}
+
+.tabela tr th {
+    color: white;
+}
+
+.tabela thead{
+    background-color: transparent;
+    height: 4rem;
+    color: #ffff;
+}
+
+.tabela tr {
+    background-color: #b8b8b8;
+    color: black;  
+}
+
+.tabela tr td {
+    color: black;
+}
+
+.tableHeader .row {
+    background-color: #203867;
+    color: white;
+}
+
+.tableHeader .row .cell {
+    color: white;
+    border-right: 1px solid white; 
+}
+
+.tableHeader .row .cell:last-child {
+    border-right: none;
+}
+
+.tableBody .row {
+    background-color: #b8b8b8;
+    color: black;
+}
+
+.tableBody .row .cell {
+    color: black;
+}
+
+.tableBody .row .cell:last-child {
+    border-right: none;
+}
+
+.row {
+    background-color: #203867;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    margin-bottom: 10px;
+    color: white;
+}
+
+.cell, .headerCell {
+    border: none;
+    padding: 10px;
+    flex: 1;
+}

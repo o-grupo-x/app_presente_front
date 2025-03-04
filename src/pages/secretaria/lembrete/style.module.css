@@ -1,0 +1,403 @@
+.fundoContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .cardContainer {
+    /* background-color: #2a3f5f; */
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    display: flex;
+    gap: 190px; 
+    
+  }
+
+  .ajuste{
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .modalTitle{
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    margin: 0;
+  }
+
+  .modalText{
+    margin: 0;
+  }
+  
+  .chartSection {
+    /* Remove height if you want to let the content define the size */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .infoSection {
+    font-family: 'Arial', sans-serif; /* Replace with the font you want */
+  }
+  
+  .cardContainer {
+    width: 100%;
+    color: white;
+    padding: 50px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
+  
+  .chartSection {
+    flex: 2;
+    text-align: center;
+    height: 300px; /* ou qualquer altura que você achar apropriada */
+  }
+  
+  /* Estilos para o contêiner do gráfico e informações do aluno */
+  .studentStatsContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    background-color: #2c3e50; /* Exemplo de cor de fundo */
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 600px; /* ou o tamanho que desejar */
+    margin: auto;
+  }
+  
+  
+  /* .chartContainer {
+    width: 100%;
+    max-width: 300px; 
+    margin: 20px 0;
+    width: 100%;
+  } */
+  
+  /* Estilos para o texto */
+  .studentInfo {
+    text-align: center;
+    margin: 10px 0;
+  }
+  
+  .studentInfo h2 {
+    font-size: 1.5rem; /* Tamanho da fonte do nome */
+    margin-bottom: 5px;
+  }
+  
+  .studentInfo p {
+    font-size: 1rem; /* Tamanho da fonte dos detalhes */
+  }
+  
+  /* Estilização dos ícones FontAwesome */
+  .faIcon {
+     /* color: #2a3f5f; */
+    font-size: 20px; /* Tamanho do ícone */
+    cursor: pointer; /* Cursor como ponteiro para indicar ação */
+    margin: 0 5px; /* Margem entre ícones */
+    transition: color 0.3s; /* Transição suave da cor ao passar o mouse */
+  }
+  
+  .faIcon:hover {
+    color: #3498db; /* Cor ao passar o mouse */
+  }
+  
+  .faFile {
+    color: #3498db;
+  }
+  
+  .faChartPie {
+    color: #9b59b6;
+  }
+  /* Adicione mais estilos conforme necessário para alinhar com seu design */
+  
+  
+  .infoSection {
+    flex: 1;
+  }
+  
+  .chart {
+    width: 50%; /* Adjust the width as necessary */
+    margin: auto; /* Center the chart */
+  }
+  
+  /* Add more styles as needed */
+  
+  
+  .modalOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.6); /* Dark overlay */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000; /* Ensure it's above other content */
+    }
+  
+    .modalTitleInput:focus,
+  .modalTextArea:focus {
+    outline: none; /* Removes the default focus outline */
+    /* Optionally add a different style for the focus state to maintain accessibility */
+    box-shadow: 0 0 0 2px #31475e;
+  }
+  
+  .modalSubmitButton {
+      background-color: #3498db; /* Cor de fundo azul */
+      color: white; /* Texto branco */
+      border: none; /* Sem borda */
+      padding: 10px 20px; /* Espaçamento interno */
+      border-radius: 5px; /* Bordas arredondadas */
+      font-weight: bold; /* Texto em negrito */
+      cursor: pointer; /* Cursor do mouse como ponteiro (mãozinha) */
+      transition: background-color 0.3s ease; /* Transição suave para o hover */
+      outline: none; /* Remover contorno ao focar */
+    }
+    
+    .modalSubmitButton:hover,
+    .modalSubmitButton:focus {
+      background-color: #2980b9; /* Cor de fundo um pouco mais escura ao passar o mouse ou focar */
+    }
+    
+    .modalSubmitButton:active {
+      transform: translateY(2px); /* Efeito de pressionado */
+    }
+  
+  .modalCloseButton {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem; /* Large 'x' character */
+      cursor: pointer;
+      position: absolute;
+      top: 10px;
+      right: 15px;
+    }
+    
+    .modalContent {
+      background-color: #2c3e50; /* Dark blue background, or use 'transparent' to remove background */
+      color: #fff; /* White text */
+      width: 50%; /* Adjust width as needed */
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Soft shadow for depth */
+      display: flex;
+      flex-direction: column; /* Stack children vertically */
+    }
+    
+    .modalHeader {
+      margin-bottom: 20px; /* Space between header and rest of content */
+    }
+    
+    .modalTitle {
+      font-size: 1.5em; /* Large text */
+    }
+    
+    .modalBody {
+      flex-grow: 1; /* Take up all available space */
+      /* Style your modal body content here */
+    }
+    
+    .modalFooter {
+      display: flex;
+      justify-content: flex-end; /* Align button to the right */
+    }
+    
+    .modalCloseButton {
+      background-color: #e7e7e7;
+      color: rgb(0, 0, 0);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px; /* Space above the button */
+    }
+    
+    .modalCloseButton:hover {
+      background-color: #2980b9; /* Slightly darker blue on hover */
+    }
+  
+    .modalTitleInput {
+      width: 96%;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      background: transparent; /* Remove the background */
+      color: white; /* Set text color to white */
+      margin-bottom: 20px; /* Space between the title input and the text area */
+    }
+  
+  .modalTextArea {
+    width: 96%;
+    height: 150px; /* You can adjust the height as needed */
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+    background: transparent; /* Remove the background */
+    color: white; /* Set text color to white */
+    margin-bottom: 20px; /* Space between the text area and the button */
+  }
+    
+  
+  .page_content {
+      position: relative;
+      left: 220px;
+      width: calc(100% - 220px);
+      /* min-height: 100vh; */
+      /* padding: 30px; */
+      color: #171616;
+      font-family: 'Lato', sans-serif;
+  }
+  
+  .inner_content {
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+  }
+  
+  .filterButtons {
+      display: flex;
+      justify-content: flex-start; /* Align buttons to the start */
+      gap: 10px;
+      margin-bottom: 20px;
+      width: 90%; 
+      margin-left: auto; /* Aligns the container to the center-right */
+      margin-right: auto; /* Aligns the container to the center-right */
+  }
+  
+  .filterButton:hover,
+  .filterButton.active { /* The active class will have the same style as hover */
+      background-color: #03548a;
+  }
+  
+  .tabela tbody tr {
+    background-color: #b8b8b8;
+    color: black;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  
+  .filterButtons button {
+      background-color: #949494;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 20px;
+      color: white;
+      cursor: pointer;
+      outline: none;
+  }
+  
+  .filterButtons button:hover {
+      background-color: #2980B9;
+  }
+  
+  .search_input {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      width: 90%; /* Match the table width */
+      margin-bottom: 20px;
+      margin-left: auto; /* Aligns the container to the center-right */
+      margin-right: auto; /* Aligns the container to the center-right */
+  }
+  
+  .search_input div {
+      position: relative;
+      width: 250px;
+  }
+  
+  .search_input input {
+      padding: 10px;
+      border-radius: 20px;
+      font-size: 16px;
+      width: 90%;
+      border: 1px solid #CCCCCC;
+      outline: none;
+  }
+  
+  .div_table {
+      width: 96%;
+      margin-left: 20;
+      /* margin-right: 40px; */
+      overflow-x: auto;
+  }
+  
+  .tabela {
+      width: 100%; 
+      margin: auto;
+      border-spacing: 0;
+      border-collapse: collapse;
+  }
+  
+  .tabela thead {
+      background-color: #203867;
+  }
+  
+  .tabela th {
+      color: white;
+      padding: 15px;
+      text-align: left;
+  }
+  
+  .tabela tbody tr {
+      background-color: #b8b8b8;
+      color: black;
+      border-radius: 10px; 
+      margin-bottom: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  .tabela td {
+      padding: 15px;
+      text-align: left;
+  }
+  
+  .iconCell {
+    text-align: center; /* Centraliza os ícones na célula */
+    padding: 10px; /* Espaçamento interno */
+    border-radius: 5px; /* Bordas arredondadas */
+  }
+
+  
+  .lembreteContainer {
+ 
+    padding: 20px;
+    border-radius: 15px;
+    max-width: 800px;
+    margin: 20px auto;
+    color: white;
+  }
+  
+  .lembreteTitle {
+    font-size: 24px;
+    border-bottom: 1px solid #555;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .lembreteContent h2 {
+    font-size: 20px;
+    margin-bottom: 15px;
+  }
+  
+  .lembreteContent p {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 15px;
+  }
+  
+  .lembreteFooter {
+    font-size: 14px;
+    border-top: 1px solid #555;
+    padding-top: 10px;
+    display: flex;
+    justify-content: space-between;
+  }

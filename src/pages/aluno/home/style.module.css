@@ -1,0 +1,157 @@
+@import url("https://fonts.googleapis.com/css?family=Lato:400,700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Roboto:wght@400;900&display=swap');
+
+.page_content {
+    position: relative;
+    left: 220px;
+    width: calc(100% - 220px);
+    min-height: 100vh;
+    padding: 30px;
+    color: #171616;
+    font-family: 'Lato', sans-serif;
+}
+
+.inner_content {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.chamada {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    width: 75%;
+    height: 40vh;
+    background-color: #203867;
+    margin-bottom: 2.5rem;
+    border-radius: 20px;
+}
+
+.chamada div {
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+}
+
+.historico {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    width: 75%;
+    height: 40vh;
+    background-color: #203867;
+    border-radius: 20px;
+}
+
+.historico div {
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+}
+
+.botao {
+    font-size: medium;
+    color: #ffff;
+    background-color: #203867;
+    height: 30px;
+    width: 60%;
+    border-radius: 50px;
+}
+
+.botaoRealizaChamada {
+    width: 70%;
+    height: 2.3rem;
+    border-radius: 15px;
+    background-color: #203867;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.botaoRealizaChamada:hover {
+    background-color: #556482;
+}
+
+.tabela {
+    width: 90%;
+    border-radius: 0px;
+    border-collapse: collapse;
+    background-color: transparent;
+    text-align: center;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+   
+}
+
+.tabela tr{
+    height: 3rem;
+    background-color: #203867;
+    color: white; 
+}
+
+.tabela tr th {
+    color: white;
+}
+
+.tabela thead{
+    background-color: transparent;
+    height: 4rem;
+    color: #ffffff;
+}
+
+.tabela tr {
+    background-color: #b8b8b8;
+    color: black;  
+}
+
+.tabela tr td {
+    color: black;
+}
+
+.tableHeader .row {
+    background-color: #203867;
+    color: white;
+}
+
+.tableHeader .row .cell {
+    color: white;
+    border-right: 1px solid white; 
+}
+
+.tableHeader .row .cell:last-child {
+    border-right: none;
+}
+
+.tableBody .row {
+    background-color: #ffffff;
+    color: black;
+}
+
+.tableBody .row .cell {
+    color: black;
+}
+
+.tableBody .row .cell:last-child {
+    border-right: none;
+}
+
+.row {
+    background-color: #203867;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    margin-bottom: 10px;
+    color: white;
+}
+
+.cell, .headerCell {
+    border: none;
+    padding: 10px;
+    flex: 1;
+}

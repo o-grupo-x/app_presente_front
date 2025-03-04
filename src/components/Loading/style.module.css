@@ -1,0 +1,15 @@
+/* style.module.css */
+.progressBar {
+  height: 30%;
+  background-color: #0140be;
+  transition: width 1s;
+  top: 30px;
+}
+
+.loadingBar {
+  height: 15px;  
+  width: 100%;   
+  /* background-color: #ffffff;  */
+  border-radius: 20px; 
+  top: 20px;
+}

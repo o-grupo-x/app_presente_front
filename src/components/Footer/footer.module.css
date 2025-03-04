@@ -1,0 +1,15 @@
+/* FOOTER*/
+.page_footer {
+    background-color: #f0f1f6;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+    
+    .page_footer a {
+      margin-left: 4px;
+    }
+    
+
+
