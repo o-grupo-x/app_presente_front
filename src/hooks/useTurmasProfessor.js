@@ -8,14 +8,21 @@ export default function useTurmasProfessor(idProfessor, jwt) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!jwt || !idProfessor) return;
+    if (!jwt || !idProfessor) return; // Only fetch if both are present
     setLoading(true);
 
-    api.professor.turmas(idProfessor, jwt)
+    api.turma.listAll(jwt)
       .then(res => {
-        setTurmas(res.data || []);
+        console.log('Raw turmas response:', res.data); // Debug raw data
+        const mappedTurmas = (res.data || []).map(turma => ({
+          id_turma: turma.Id,  // Matches Postman "Id"
+          nome: turma.Nome,    // Matches Postman "Nome"
+        }));
+        console.log('Mapped turmas:', mappedTurmas); // Debug mapped data
+        setTurmas(mappedTurmas);
       })
       .catch(err => {
+        console.error('Error fetching turmas:', err);
         setError(err);
       })
       .finally(() => setLoading(false));

@@ -6,7 +6,7 @@ import logo from '../../img/logo-removebg.png';
 import Image from "next/image";
 import { motion } from 'framer-motion';
 import { useUser } from '@/contexts/UserContext';
-// import //sendLog from '@/utils/logHelper';
+// // import sendLog from '@/utils/logHelper';
 import useLogin from '@/hooks/useLogin'; // << novo hook
 import { jwtDecode } from 'jwt-decode';
 

@@ -237,13 +237,13 @@ const api = {
   },
   materia: {
     create: (payload, jwt) =>
-      httpClient.post("api/materia", payload, {
+      httpClient.post("/api/materia", payload, {  
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     listAll: (jwt) =>
-      httpClient.get("api/materia/listAll", {
+      httpClient.get("/api/materia/listAll", {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },

@@ -31,7 +31,7 @@ function Chamada() {
   const [buttonClicked, setButtonClicked] = useState(false);
 
   // Carrega turmas do professor selecionado
-  const { turmas } = useTurmasProfessor(professorSelecionado?.id, jwt);
+  const { turmas, loading: turmasLoading, error: turmasError } = useTurmasProfessor(professorSelecionado?.id, jwt);
 
   // Ações
   const handleProfessorSelect = (e) => {
@@ -96,6 +96,9 @@ function Chamada() {
   if (loadingChamadas || loadingAction) {
     return <p>Carregando chamadas...</p>;
   }
+  if (turmasError) {
+    console.error('Error loading turmas:', turmasError);
+  }
   if (errorChamadas) {
     return <p>Ocorreu um erro ao carregar chamadas.</p>;
   }
@@ -123,14 +126,24 @@ function Chamada() {
                 </select>
               </div>
               <div className={styles.selectCursos}>
-                <select onChange={handleTurmaSelect}>
-                  <option value="">Selecione uma turma</option>
-                  {turmas.map((turma) => (
-                    <option key={turma.id_turma} value={turma.id_turma}>
-                      {turma.nome}
-                    </option>
-                  ))}
-                </select>
+                {turmasLoading ? (
+                  <p>Carregando turmas...</p>
+                ) : turmasError ? (
+                  <p>Erro ao carregar turmas</p>
+                ) : (
+                  <select onChange={handleTurmaSelect} value={selectedTurma}>
+                    <option value="">Selecione uma turma</option>
+                    {turmas && turmas.length > 0 ? (
+                      turmas.map((turma) => (
+                        <option key={turma.id_turma} value={turma.id_turma}>
+                          {turma.nome}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">Nenhuma turma disponível</option>
+                    )}
+                  </select>
+                )}
               </div>
               <div className="juntar">
                 <label className={styles.label}>Insira a data de abertura:</label>
