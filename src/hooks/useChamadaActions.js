@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '@/client/api';
-import //sendLog from '@/utils/logHelper';
+// Removemos a linha incorreta de importação
+//import sendLog from '@/utils/logHelper';
 
 export default function useChamadaActions(jwt, idProfessor) {
   const [serverResponse, setServerResponse] = useState(null);
@@ -19,7 +20,7 @@ export default function useChamadaActions(jwt, idProfessor) {
       //sendLog('Chamada aberta com sucesso.', 'info');
     } catch (err) {
       setError(err);
-      setServerResponse(err.response?.data || null);
+      setServerResponse(err.response?.data || err.message);
       //sendLog(`Erro ao abrir chamada: ${err.message}`, 'error');
     } finally {
       setLoading(false);
@@ -35,10 +36,10 @@ export default function useChamadaActions(jwt, idProfessor) {
 
       const response = await api.chamada.fecharChamada(idChamada, jwt);
       setServerResponse(response.data);
-      //sendLog('Chamada fechada com sucesso.', 'info');
+      sendLog('Chamada fechada com sucesso.', 'info');
     } catch (err) {
       setError(err);
-      setServerResponse(err.response?.data || null);
+      setServerResponse(err.response?.data || err.message);
       //sendLog(`Erro ao fechar chamada: ${err.message}`, 'error');
     } finally {
       setLoading(false);
