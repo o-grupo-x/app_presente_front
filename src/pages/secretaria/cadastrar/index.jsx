@@ -9,7 +9,7 @@ import {faUser,faChalkboardTeacher,faBook,faPeopleGroup} from "@fortawesome/free
 import withAuth from '@/utils/auth';
 import api from "@/client/api";
 import withAuthorization from '@/utils/withAuthorization';
-import sendLog from '@/utils/logHelper';
+// import //sendLog from '@/utils/logHelper';
 
 const Cadastrar = () => {
   const { user } = useUser();
@@ -100,7 +100,7 @@ const Cadastrar = () => {
   const fetchTurmas = useCallback(() => {
 
     if (!jwt) {
-      sendLog('JWT not available, cannot fetch turmas', 'error');
+      // //sendLog('JWT not available, cannot fetch turmas', 'error');
       return;
     }
 
@@ -110,13 +110,13 @@ const Cadastrar = () => {
         setServerResponse(response.data);
         setButtonClicked(true);
         setTurmas(response.data);
-        sendLog(`Fetched ${response.data.length} turmas successfully`, 'info');
+        // //sendLog(`Fetched ${response.data.length} turmas successfully`, 'info');
       })
       .catch((error) => {
         setServerResponse(error.response.data);
         setButtonClicked(true);
         // console.error("Erro ao buscar as chamadas abertas:", error);
-        sendLog(`Failed to fetch turmas: ${error}`, 'error');
+        // //sendLog(`Failed to fetch turmas: ${error}`, 'error');
       });
   }, [jwt]);
 
@@ -144,13 +144,13 @@ const Cadastrar = () => {
         setButtonClicked(true);
         setTimeout(() => fetchTurmas(jwt), 2000);
         setNomeTurma("");
-        sendLog('Turma created successfully', 'info');
+        // //sendLog('Turma created successfully', 'info');
       })
       .catch((error) => {
         setServerResponse(error.response.data);
         setButtonClicked(true);
         // console.error("Erro ao criar turma:", error);
-        sendLog(`Failed to create turma: ${error}`, 'error');
+        // //sendLog(`Failed to create turma: ${error}`, 'error');
       });
   };
 
@@ -290,7 +290,7 @@ const Cadastrar = () => {
     if (!buttonClicked) {
       return null;
     } else {
-      sendLog(`Displaying server response: ${serverResponse}`, 'info');
+      // //sendLog(`Displaying server response: ${serverResponse}`, 'info');
       const successIcon = "✅";
       const errorIcon = "❌";
       let responseMessage = "";

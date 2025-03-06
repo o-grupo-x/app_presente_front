@@ -7,7 +7,7 @@ import { useUser } from "@/contexts/UserContext";
 import withAuthorization from '@/utils/withAuthorization';
 import api from "@/client/api";
 import withAuth from "@/utils/auth";
-import sendLog from "@/utils/logHelper";
+// import //sendLog from "@/utils/logHelper";
 
 const Presenca = () => {
   const { user } = useUser();
@@ -24,7 +24,7 @@ const Presenca = () => {
       const id_secretaria = user.sub.id_secretaria;
       const jwt = user.sub.JWT;
       const cargo = user.sub.cargo;
-      sendLog('User data loaded for Presenca component', 'info');
+      // //sendLog('User data loaded for Presenca component', 'info');
     }
   }, [user]);
 
@@ -39,14 +39,14 @@ const Presenca = () => {
     api.professor
       .presenca(body,jwt)
       .then((response) => {
-        sendLog('Presence marked successfully', 'info');
+        // //sendLog('Presence marked successfully', 'info');
         // console.log("Chamada marcada com sucesso:", response.data);
         setServerResponse(response.data);
         setButtonClicked(true);
       })
       .catch((error) => {
         // console.error("Erro:", error);
-        sendLog(`Error marking presence: ${error}`, 'error');
+        // //sendLog(`Error marking presence: ${error}`, 'error');
         if (error.response) {
           console.error("Detalhes do erro:", error.response.data);
           setServerResponse(error.response.data);
@@ -63,7 +63,7 @@ const Presenca = () => {
       const errorIcon = "❌";
       const responseMessage = serverResponse.mensagem ? serverResponse.mensagem : serverResponse;
   
-      sendLog(`Rendering server response: ${responseMessage}`, 'info');
+      // //sendLog(`Rendering server response: ${responseMessage}`, 'info');
 
       if (responseMessage === "presenca registrada") {
         return (

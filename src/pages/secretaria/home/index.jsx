@@ -13,7 +13,7 @@ import { sendError } from "next/dist/server/api-utils";
 import withAuth from "@/utils/auth";
 import { useUser } from "@/contexts/UserContext";
 import withAuthorization from '@/utils/withAuthorization';
-import sendLog from '@/utils/logHelper';
+// import //sendLog from '@/utils/logHelper';
 
 Chart.register(ChartDataLabels);
 
@@ -38,7 +38,7 @@ const Dashboard = () => {
     if (user) {
       // console.log('aqui a porrrrrrrrrrrrrrrrrrrraaaaaaaaaaaaaaaaaaaaaaaaa do user',user.sub.JWT);
       const jwt = user.sub.JWT;
-      sendLog('JWT token is available for use.', 'debug');
+      // //sendLog('JWT token is available for use.', 'debug');
     }
   }, [user,jwt]);
 
@@ -55,12 +55,12 @@ const Dashboard = () => {
     api.turma.listAll(jwt)
       .then(response => {
         setTurmas(response.data);
-        sendLog(`Successfully fetched ${response.data.length} turmas.`, 'info');
+        // //sendLog(`Successfully fetched ${response.data.length} turmas.`, 'info');
         // console.log('turmas');
         // console.log(response.data)
       })
       .catch(error => {
-        sendLog(`Error fetching turmas: ${error}`, 'error');
+        // //sendLog(`Error fetching turmas: ${error}`, 'error');
         // console.error("Erro ao buscar dados da turma:", error);
       });
   }, [jwt]);
@@ -145,9 +145,9 @@ const Dashboard = () => {
       fetchTurmaAtivosInativos(selectedId,jwt);
       fetchMediaAtivosInativos(selectedId,jwt);
       fetchMediaPresentesAusentes(selectedId,jwt);
-      sendLog(`Turma selected: ${selectedTurma.Nome}`, 'info');
+      // //sendLog(`Turma selected: ${selectedTurma.Nome}`, 'info');
     }else {
-      sendLog('No turma found with the selected ID.', 'warn');
+      // //sendLog('No turma found with the selected ID.', 'warn');
     }
 
   };

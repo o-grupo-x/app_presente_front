@@ -7,7 +7,7 @@ import api from "@/client/api";
 import { useUser } from "@/contexts/UserContext";
 import withAuth from "@/utils/auth";
 import withAuthorization from '@/utils/withAuthorization';
-import sendLog from '@/utils/logHelper';
+// import //sendLog from '@/utils/logHelper';
 
 const Chamada = () => {
   const { user } = useUser();
@@ -56,12 +56,12 @@ const Chamada = () => {
         .listAll(jwt)
         .then((response) => {
           setProfessores(response.data);
-          sendLog(`Successfully fetched ${response.data.length} professors`, 'info');
+          // //sendLog(`Successfully fetched ${response.data.length} professors`, 'info');
           // console.log(response.data);
         })
         .catch((error) => {
           // console.error("Erro ao buscar professores:", error);
-          sendLog(`Failed to fetch professors: ${error}`, 'error');
+          // //sendLog(`Failed to fetch professors: ${error}`, 'error');
         });
     }
   }, [jwt]);
@@ -72,11 +72,11 @@ const Chamada = () => {
         .turmas(professorSelecionado.id, jwt)
         .then((response) => {
           setTurmas(response.data);
-          sendLog(`Successfully fetched ${response.data.length} turmas`, 'info');
+          // //sendLog(`Successfully fetched ${response.data.length} turmas`, 'info');
         })
         .catch((error) => {
           // console.error("Erro ao buscar turmas:", error);
-          sendLog(`Failed to fetch turmas: ${error}`, 'error');
+          // //sendLog(`Failed to fetch turmas: ${error}`, 'error');
         });
     }
   }, [professorSelecionado, jwt]);
@@ -197,7 +197,7 @@ const Chamada = () => {
         // console.log("Resposta da chamada:", response.data);
         setServerResponse(response.data);
         setButtonClicked(true);
-        sendLog('Chamada opened successfully', 'info');
+        // //sendLog('Chamada opened successfully', 'info');
         return api.chamada.listAll(jwt);
       })
       .then((response) => {
@@ -206,7 +206,7 @@ const Chamada = () => {
       })
       .catch((error) => {
         // console.error("Erro ao abrir a chamada:", error);
-        sendLog(`Failed to open chamada: ${error}`, 'error');
+        // //sendLog(`Failed to open chamada: ${error}`, 'error');
         setServerResponse(error.response.data);
         setButtonClicked(true);
         if (error.response) {
@@ -223,7 +223,7 @@ const Chamada = () => {
         },
       })
       .then((response) => {
-        sendLog('Chamada closed successfully', 'info');
+        // //sendLog('Chamada closed successfully', 'info');
         // console.log("Chamada encerrada com sucesso:", response.data);
         setServerResponse(response.data);
         return api.chamada.listAll(jwt);
@@ -233,10 +233,10 @@ const Chamada = () => {
       })
       .catch((error) => {
         // console.error("Erro:", error);
-        sendLog(`Failed to close chamada: ${error}`, 'error');
+        // //sendLog(`Failed to close chamada: ${error}`, 'error');
         if (error.response) {
           setServerResponse(error.response.data);
-          sendLog(`Details to close chamada: ${error.response.data}`, 'error');
+          // //sendLog(`Details to close chamada: ${error.response.data}`, 'error');
           // console.error("Detalhes do erro:", error.response.data);
         }
       });

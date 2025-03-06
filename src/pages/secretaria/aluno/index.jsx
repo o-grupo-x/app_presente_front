@@ -10,13 +10,13 @@ import { useUser } from "@/contexts/UserContext";
 import withAuth from "@/utils/auth";
 import GraficoCircular from "@/components/GraficoCircular/GraficoCircular";
 import withAuthorization from '@/utils/withAuthorization';
-import sendLog from '@/utils/logHelper';
+// import //sendLog from '@/utils/logHelper';
 
 function Modal({ isOpen, onClose, alunoId, title, setTitle, content, setContent, cargo, onSend }) {
   const handleSend = () => {
     onSend(alunoId, title, content, cargo);
     onClose();
-    sendLog(`Reminder sent for student ID: ${alunoId}`, 'info');
+    // //sendLog(`Reminder sent for student ID: ${alunoId}`, 'info');
   };
 
   if (!isOpen) return null;
@@ -63,7 +63,7 @@ const Aluno = () => {
       // console.log("User:", user);
       setId(user.sub.id_secretaria);
       const jwt = user.sub.JWT;
-      sendLog('User data loaded successfully', 'debug');
+      // //sendLog('User data loaded successfully', 'debug');
     }
   }, [user]);
 
@@ -165,11 +165,11 @@ const Aluno = () => {
 
     try {
       await api.admin.lembrete(lembreteData,jwt);
-      sendLog(`Reminder sent successfully for student ID: ${destinatario_id}`, 'info');
+      // //sendLog(`Reminder sent successfully for student ID: ${destinatario_id}`, 'info');
       // console.log("Dados enviados com sucesso");
     } catch (error) {
       console.error("Erro ao enviar os dados do lembrete:", error);
-      sendLog(`Error sending reminder for student ID: ${destinatario_id}: ${error.message}`, 'error');
+      // //sendLog(`Error sending reminder for student ID: ${destinatario_id}: ${error.message}`, 'error');
     }
 
     setIsModalOpen(false);
@@ -184,14 +184,14 @@ const Aluno = () => {
         if (response && response.data) {
           setAlunos(response.data);
           setFilteredAlunos(response.data);
-          sendLog('Students fetched successfully', 'info');
+          // //sendLog('Students fetched successfully', 'info');
         } else {
           console.error("Resposta não está no formato esperado:", response);
         }
       } catch (error) {
-        sendLog(`Error fetching students: ${error.message}`, 'error');
+        // //sendLog(`Error fetching students: ${error.message}`, 'error');
         console.error("Erro ao buscar alunos: ", error);
-        sendLog(`Error fetching statistics for student ID: ${idAluno}: ${error.message}`, 'error');
+        // //sendLog(`Error fetching statistics for student ID: ${idAluno}: ${error.message}`, 'error');
       }
     };
 

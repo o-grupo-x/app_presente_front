@@ -10,7 +10,7 @@ import { useUser } from "@/contexts/UserContext";
 import withAuth from "@/utils/auth";
 import GraficoCircular from "@/components/GraficoCircular/GraficoCircular";
 import withAuthorization from '@/utils/withAuthorization';
-import sendLog from '@/utils/logHelper';
+// import //sendLog from '@/utils/logHelper';
 
 function Modal({ isOpen, onClose, title, content }) {
   if (!isOpen) return null;
@@ -51,7 +51,7 @@ const Lembrete = () => {
     if (user) {
       setId(user.sub.id_secretaria);
       const jwt = user.sub.JWT;
-      sendLog(`User data loaded for user ${user.sub.id}`, 'info');
+      // //sendLog(`User data loaded for user ${user.sub.id}`, 'info');
     }
   }, [user]);
 
@@ -60,11 +60,11 @@ const Lembrete = () => {
       .FindById(lembreteId, jwt)
       .then((response) => {
         setSelectedLembrete(response.data);
-        sendLog(`Lembrete details loaded for ID ${lembreteId}`, 'info');
+        // //sendLog(`Lembrete details loaded for ID ${lembreteId}`, 'info');
       })
       .catch((error) => {
         // console.error("Erro ao buscar lembrete:", error);
-        sendLog(`Failed to fetch lembrete details for ID ${lembreteId}: ${error}`, 'error');
+        // //sendLog(`Failed to fetch lembrete details for ID ${lembreteId}: ${error}`, 'error');
       });
   };
   const listarTodosLembretes = useCallback(() => {
@@ -73,11 +73,11 @@ const Lembrete = () => {
       .then((response) => {
         setLembretes(response.data);
         // console.log(response.data);
-        sendLog(`Successfully fetched lembretes: ${response.data.length} items`, 'info');
+        // //sendLog(`Successfully fetched lembretes: ${response.data.length} items`, 'info');
       })
       .catch((error) => {
         // console.error("Erro ao buscar lembretes:", error);
-        sendLog(`Failed to fetch lembretes: ${error}`, 'error');
+        // //sendLog(`Failed to fetch lembretes: ${error}`, 'error');
       });
   }, [jwt]);
 

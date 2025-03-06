@@ -1,6 +1,6 @@
 import api from "@/client/api";
 
-function sendLog(message, level) {
+function //sendLog(message, level) {
     // Construa a configuração de headers diretamente aqui, se necessário
     const config = {
       headers: {
@@ -8,8 +8,8 @@ function sendLog(message, level) {
       }
     };
 
-    // Passa a configuração como argumento para a função sendLog
-    api.usuario.sendLog(message, level, config)
+    // Passa a configuração como argumento para a função //sendLog
+    api.usuario.//sendLog(message, level, config)
       .then(response => {
           console.log('Log sent: ', response.data);
       })
@@ -18,4 +18,4 @@ function sendLog(message, level) {
       });
 }
 
-export default sendLog;
+export default //sendLog;
