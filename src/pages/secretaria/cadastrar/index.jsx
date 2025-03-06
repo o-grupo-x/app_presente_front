@@ -1,3 +1,4 @@
+// src/pages/secretaria/cadastrar/index.jsx
 import React, { useEffect, useState } from "react";
 import { useUser } from "@/contexts/UserContext";
 import { Fundo } from "@/components/Fundo/fundo";
@@ -5,11 +6,11 @@ import styles from "./style.module.css";
 import Navbar from "@/components/Navbar/navbar";
 import Cabecalho from "@/components/Cabecalho/cabecalho";
 import withAuth from "@/utils/auth";
-import withAuthorization from '@/utils/withAuthorization';
+import withAuthorization from "@/utils/withAuthorization";
 
 // HOOKS
-import useFetchTurmas from "@/hooks/useFetchTurmas";
-import useFetchMaterias from "@/hooks/useFetchMaterias";
+import useFetchTurmas from "@/hooks/useTurmasRealTime";
+import useMateriasRealTime from "@/hooks/useMateriasRealTime";
 import useCreateMateria from "@/hooks/useCreateMateria";
 import useCreateTurma from "@/hooks/useCreateTurma";
 import useCreateUsuario from "@/hooks/useCreateUsuario";
@@ -20,21 +21,10 @@ function Cadastrar() {
 
   const [activeForm, setActiveForm] = useState(null);
 
-  // Hooks de listagem
-  const { turmas } = useFetchTurmas(jwt);
-  const { materias } = useFetchMaterias(jwt);
-
-  // Hooks de criação
-  const { createMateria, serverResponse: matResp } = useCreateMateria(jwt);
-  const { createTurma, serverResponse: turmaResp } = useCreateTurma(jwt);
-  const {
-    createUsuario,
-    addUsuarioTurma,
-    serverResponse: usuResp
-  } = useCreateUsuario(jwt);
-
-  // Estados do form
+  // Estados do form que influenciam o refetch das turmas
   const [cargo, setCargo] = useState("");
+  
+  // Outros estados do form...
   const [nome, setNome] = useState("");
   const [login, setLogin] = useState("");
   const [senha, setSenha] = useState("");
@@ -50,7 +40,7 @@ function Cadastrar() {
   const [selectedMateria, setSelectedMateria] = useState("");
   const [serverResponse, setServerResponse] = useState(null);
 
-  // Limpamos ao mudar o "activeForm"
+  // Sempre que o activeForm mudar, limpamos os estados
   useEffect(() => {
     setCargo("");
     setNome("");
@@ -69,10 +59,21 @@ function Cadastrar() {
     setServerResponse(null);
   }, [activeForm]);
 
-  // Unir as respostas de server (para exibir)
+  // Aqui usamos o hook de turmas com refetch automático se estiver no formulário de usuário com cargo "Professor"
+  const { data: turmas = [] } = useFetchTurmas(jwt, { realTime: activeForm === "usuario" && cargo === "Professor" });
+  
+  // Atualização das matérias em tempo real permanece inalterada
+  const { data: materias } = useMateriasRealTime(jwt);
+
+  // Hooks de criação
+  const { createMateria, serverResponse: matResp } = useCreateMateria(jwt);
+  const { createTurma, serverResponse: turmaResp } = useCreateTurma(jwt);
+  const { createUsuario, addUsuarioTurma, serverResponse: usuResp } = useCreateUsuario(jwt);
+
+  // Unir as respostas do servidor para exibição
   const finalResponse = serverResponse || usuResp || matResp || turmaResp;
 
-  // Handlers
+  // Handlers de criação
   const handleCreateUsuario = async () => {
     if ((cargo === "Professor" || cargo === "Aluno") && !selectedTurma) {
       setServerResponse("Por favor, selecione uma turma antes de continuar.");
@@ -88,18 +89,17 @@ function Cadastrar() {
       };
       const resData = await createUsuario(payload);
 
-      // Se criou professor/aluno, associar à turma
       if (cargo === "Professor" && resData.id_professor) {
         await addUsuarioTurma({
           cargo: "Professor",
           turmaId: selectedTurma,
-          userId: resData.id_professor
+          userId: resData.id_professor,
         });
       } else if (cargo === "Aluno" && resData.id_aluno) {
         await addUsuarioTurma({
           cargo: "Aluno",
           turmaId: selectedTurma,
-          userId: resData.id_aluno
+          userId: resData.id_aluno,
         });
       } else if (cargo === "Secretaria") {
         setServerResponse("Secretaria cadastrada");
@@ -114,7 +114,9 @@ function Cadastrar() {
       await createMateria({ nome: nomeMateria });
       setNomeMateria("");
       setServerResponse("Matéria Cadastrada");
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleCreateTurma = async () => {
@@ -125,13 +127,15 @@ function Cadastrar() {
       modalidade,
       nome: nomeTurma,
       turno,
-      id_materia: selectedMateria
+      id_materia: selectedMateria,
     };
     try {
       await createTurma(payload);
       setServerResponse("Turma cadastrada com sucesso");
       setNomeTurma("");
-    } catch (err) {}
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const renderForm = () => {
@@ -179,10 +183,10 @@ function Cadastrar() {
                     onChange={(e) => setSelectedTurma(e.target.value)}
                   >
                     <option value="">Selecione uma turma</option>
-                    {turmas.map((turma) => (
+                    {turmas?.map((turma) => (
                       <option key={turma.id_turma} value={turma.Id}>
-                        {turma.Nome}
-                      </option>
+                       {turma.Nome}
+                    </option>
                     ))}
                   </select>
                 </>
@@ -258,11 +262,12 @@ function Cadastrar() {
                 onChange={(e) => setSelectedMateria(e.target.value)}
               >
                 <option value="">Selecione uma matéria</option>
-                {materias.map((m) => (
-                  <option key={m.id_materia} value={m.Id}>
-                    {m.Nome}
-                  </option>
-                ))}
+                {materias &&
+                  materias.map((m) => (
+                    <option key={m.id_materia} value={m.Id}>
+                      {m.Nome}
+                    </option>
+                  ))}
               </select>
               <label className={styles.label}>Curso:</label>
               <select
@@ -271,8 +276,12 @@ function Cadastrar() {
                 onChange={(e) => setCurso(e.target.value)}
               >
                 <option value="">Selecione um curso</option>
-                <option value="Engenharia de Software">Engenharia de Software</option>
-                <option value="Análise e Desenvolvimento de Sistemas">Análise e Desenvolvimento de Sistemas</option>
+                <option value="Engenharia de Software">
+                  Engenharia de Software
+                </option>
+                <option value="Análise e Desenvolvimento de Sistemas">
+                  Análise e Desenvolvimento de Sistemas
+                </option>
               </select>
               <label className={styles.label}>Turno:</label>
               <select
@@ -343,7 +352,13 @@ function Cadastrar() {
       </Fundo>
       <Fundo>
         <div className={styles.serverResponse}>
-          {finalResponse && <p>{finalResponse}</p>}
+          {finalResponse && (
+            <p>
+              {typeof finalResponse === "object"
+                ? JSON.stringify(finalResponse)
+                : finalResponse}
+            </p>
+          )}
         </div>
         {renderForm()}
       </Fundo>
