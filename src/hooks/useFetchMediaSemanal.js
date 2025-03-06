@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '@/client/api';
-// import //sendLog from '@/utils/logHelper';
+// // import sendLog from '@/utils/logHelper';
 
 export default function useFetchMediaSemanal(idTurma, jwt) {
   const [mediaSemanal, setMediaSemanal] = useState([]);
