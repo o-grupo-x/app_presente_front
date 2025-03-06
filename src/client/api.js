@@ -1,12 +1,12 @@
 
-require('dotenv').config();
-
-
 import axios from "axios";
 
 
+const backend = process.env.NEXT_PUBLIC_BACK || "http://localhost:8000";
+
 const httpClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND || "http://localhost:5000",
+  // baseURL: process.env.NEXT_PUBLIC_BACK
+  baseURL: backend,
 });
 
 const api = {
