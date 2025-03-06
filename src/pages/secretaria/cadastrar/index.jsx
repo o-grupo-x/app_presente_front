@@ -98,12 +98,11 @@ const Cadastrar = () => {
   }, [cargo, previousCargo]);
 
   const fetchTurmas = useCallback(() => {
-
     if (!jwt) {
       sendLog('JWT not available, cannot fetch turmas', 'error');
       return;
     }
-
+  
     api.turma
       .listAll(jwt)
       .then((response) => {
@@ -113,10 +112,14 @@ const Cadastrar = () => {
         sendLog(`Fetched ${response.data.length} turmas successfully`, 'info');
       })
       .catch((error) => {
-        setServerResponse(error.response.data);
+        // Check if error.response exists before accessing it
+        if (error.response) {
+          setServerResponse(error.response.data); // Server returned an error response
+        } else {
+          setServerResponse({ error: error.message || 'Unknown error occurred' }); // Network or other error
+        }
         setButtonClicked(true);
-        // console.error("Erro ao buscar as chamadas abertas:", error);
-        sendLog(`Failed to fetch turmas: ${error}`, 'error');
+        sendLog(`Failed to fetch turmas: ${error.message || error}`, 'error');
       });
   }, [jwt]);
 
