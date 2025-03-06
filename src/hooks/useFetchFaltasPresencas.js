@@ -1,7 +1,7 @@
 // hooks/useFetchFaltasPresencas.js
 import { useState, useEffect } from 'react';
 import api from '@/client/api';
-import //sendLog from '@/utils/logHelper';
+// import sendLog from '@/utils/logHelper';
 
 export default function useFetchFaltasPresencas(id_aluno, jwt) {
   const [faltasPresencas, setFaltasPresencas] = useState(null);

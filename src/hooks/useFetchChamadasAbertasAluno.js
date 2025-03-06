@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '@/client/api';
-import //sendLog from '@/utils/logHelper';
+// import sendLog from '@/utils/logHelper';
 
 export default function useFetchChamadasAbertasAluno(id_aluno, jwt) {
   const [chamadasAbertas, setChamadasAbertas] = useState([]);
