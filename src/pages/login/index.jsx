@@ -29,62 +29,40 @@ const SignIn = () => {
 }
 
 
-//   const Login = () => {
-//     const payload = {
-//       login: login,
-//       senha: password
-//     }
+  const Login = () => {
+    const payload = {
+      login: login,
+      senha: password
+    }
     
-//     sendLog(`Tentativa de login com usuário: ${payload}`, 'info');
+    sendLog(`Tentativa de login com usuário: ${payload}`, 'info');
 
-//     //console.log("Payload:" , payload);
+    console.log("Payload:" , payload);
 
-//     api.usuario.login(payload)
-//     .then((response) => {
-//       if (response.status === 200) {
-//         console.log(response.data);
-//         const {JWT, ...user} = response.data;
-//         // localStorage.setItem('user', JSON.stringify(response.data));
-//         localStorage.setItem('token',JWT);
-//         const decoded = jwtDecode(JWT);
-//         setUser(decoded);
-//         sendLog(`Login bem-sucedido: ${JSON.stringify(decoded)}`, 'success');
-//         console.log("Decoded JWT:", decoded);
-//         router.push(`/${decoded.sub.cargo.toLowerCase()}/home`);
-//       } else {
-//         sendLog(`Resposta inesperada do servidor: ${JSON.stringify(response.data)}`, 'warn');
-//         //console.log(response.data ? response.data.message : "Resposta inesperada do servidor.");
-//       }
-//     })
-//     .catch((error) => {
-//       sendLog(`Erro de login: ${error.message}`, 'error');
-//       console.error(error);
-//     });
-// };
-
-const Login = () => {
-  // Create a dummy token and user object
-  const dummyToken = 'dummy.jwt.token';
-  const dummyUser = {
-    sub: {
-      cargo: 'User' // Or whatever role you want to simulate
-    },
-    name: 'Test User'
-  };
-
-  // Save the dummy token in localStorage
-  localStorage.setItem('token', dummyToken);
-  
-  // Directly set the user (you can skip jwtDecode if you want)
-  setUser(dummyUser);
-  
-  sendLog(`Login simulado bem-sucedido: ${JSON.stringify(dummyUser)}`, 'success');
-  console.log("Dummy User:", dummyUser);
-  
-  // Redirect to the desired route, using the role from dummyUser if needed
-  router.push(`/${dummyUser.sub.cargo.toLowerCase()}/home`);
+    api.usuario.login(payload)
+    .then((response) => {
+      if (response.status === 200) {
+        console.log(response.data);
+        const {JWT, ...user} = response.data;
+        localStorage.setItem('user', JSON.stringify(response.data));
+        localStorage.setItem('token',JWT);
+        const decoded = jwtDecode(JWT);
+        console.log("Decoded JWT:", decoded);
+        setUser(decoded);
+        sendLog(`Login bem-sucedido: ${JSON.stringify(decoded)}`, 'success');
+        router.push(`/${decoded.sub.cargo.toLowerCase()}/home`);
+      } else {
+        sendLog(`Resposta inesperada do servidor: ${JSON.stringify(response.data)}`, 'warn');
+        //console.log(response.data ? response.data.message : "Resposta inesperada do servidor.");
+      }
+    })
+    .catch((error) => {
+      sendLog(`Erro de login: ${error.message}`, 'error');
+      console.error(error);
+    });
 };
 
+ 
   return (
     <>
    
@@ -95,12 +73,7 @@ const Login = () => {
             <Image src={logo} className={styles.avatar} alt="Logo do APP PRESENTE"/>
         <h1 className={styles.title}>Bem Vindo</h1>
         </div>
-        <form className={styles.form}
-  onSubmit={(e) => {
-    e.preventDefault();
-    router.push('/professor/home');
-  }}
->
+        <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.inputGroup}>
             <label className={styles.label}>Login:</label>
             <input 
@@ -132,7 +105,7 @@ const Login = () => {
       >
         Acessar
       </motion.button>
-          <p className={styles.helperText}>Forgot password?</p>
+          <p className={styles.helperText}>Forgote password?</p>
         </form>
       </div>
     </div>
