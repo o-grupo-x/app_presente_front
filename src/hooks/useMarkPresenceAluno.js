@@ -1,7 +1,7 @@
 // hooks/useMarkPresenceAluno.js
 import { useState } from 'react';
 import api from '@/client/api';
-// import //sendLog from '@/utils/logHelper';
+// // import sendLog from '@/utils/logHelper';
 
 export default function useMarkPresenceAluno(jwt) {
   const [serverResponse, setServerResponse] = useState(null);
