@@ -8,7 +8,6 @@ import { useUser } from "@/contexts/UserContext";
 import api from "@/client/api";
 import LembretesModal from "../lembretesModal";
 
-
 const Cabecalho = () => {
   const router = useRouter();
   const { user } = useUser();
@@ -32,11 +31,10 @@ const Cabecalho = () => {
     setExpandedLembrete(null);
   };
 
-
   useEffect(() => {
     if (user && user.Cargo && user.id_aluno) {
       api.aluno
-        .fetchLembretes(user.Cargo, user.id_aluno,jwt)
+        .fetchLembretes(user.Cargo, user.id_aluno, jwt)
         .then((response) => {
           // Se a resposta for um objeto, mas você espera um array, converta-o em um array
           const data = response.data;
@@ -46,27 +44,26 @@ const Cabecalho = () => {
           } else {
             setLembretes(data); // Usa diretamente se já for um array
           }
-        })
+        });
     }
-  }, [user,jwt]);
+  }, [user, jwt]);
 
-// const handleLogout = () => {
-//   // localStorage.removeItem("user");
-//   // localStorage.removeItem("timestamp");
-//   const jwt = localStorage.getItem('token'); // Retrieve the token before the API call
-//   api.usuario.logout(jwt)
-//     .then((response) => {
-//       if (response.status === 200) {
-//         console.log("deslogado");
-//       } else {
-//         console.log(response.data ? response.data.message : "Resposta inesperada do servidor.");
-//       }
-//     })
-//     .catch((error) => {
-//       console.error(error);
-//     });
-// };
-    
+  // const handleLogout = () => {
+  //   // localStorage.removeItem("user");
+  //   // localStorage.removeItem("timestamp");
+  //   const jwt = localStorage.getItem('token'); // Retrieve the token before the API call
+  //   api.usuario.logout(jwt)
+  //     .then((response) => {
+  //       if (response.status === 200) {
+  //         console.log("deslogado");
+  //       } else {
+  //         console.log(response.data ? response.data.message : "Resposta inesperada do servidor.");
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.error(error);
+  //     });
+  // };
 
   const toggleLembretesModal = () => {
     setShowLembretesModal(!showLembretesModal);
@@ -74,7 +71,7 @@ const Cabecalho = () => {
 
   return (
     <>
-            <div className={style.cabecalho_center}>
+      <div className={style.cabecalho_center}>
         <div className={style.cabecalho}>
           <span className={style.headerTitle}>App Chamada</span>
           {user?.Cargo === "Aluno" ? (
@@ -83,13 +80,15 @@ const Cabecalho = () => {
               {lembretes.length > 0 && (
                 <span className={style.lembreteCount}>{lembretes.length}</span>
               )}
-              
             </div>
           ) : null}
           <div>
-          <button onClick={logout} className={style.logoutButton}>
-            <FontAwesomeIcon icon={faSignOutAlt} className={style.headerIcon} />
-          </button>
+            <button onClick={logout} className={style.logoutButton}>
+              <FontAwesomeIcon
+                icon={faSignOutAlt}
+                className={style.headerIcon}
+              />
+            </button>
           </div>
         </div>
       </div>
