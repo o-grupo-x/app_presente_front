@@ -9,7 +9,8 @@ const LembretesModal = ({ lembretes, onClose }) => {
 
   const handleVisualizar = (idLembrete) => {
     // Aqui você chama o endpoint para marcar o lembrete como visualizado
-    api.aluno.vizualizar(idLembrete)
+    api.aluno
+      .vizualizar(idLembrete)
       .then((response) => {
         setVisualizado((prevVisualizado) => {
           const novoEstado = { ...prevVisualizado };
@@ -36,6 +37,7 @@ const LembretesModal = ({ lembretes, onClose }) => {
                 icon={visualizado[lembrete.id] ? faEyeSlash : faEye}
                 className={style.visualizadoIcon}
                 onClick={() => handleVisualizar(lembrete.id)}
+                data-testid={`eye-icon-${lembrete.id}`}
               />
             </li>
           ))}
