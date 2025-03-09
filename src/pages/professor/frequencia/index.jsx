@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react";
+// pages/professor/Frequencia/index.jsx
+import React, { useState, useEffect } from "react";
 import NavBar from "@/components/Navbar/navbar";
-import Chart from 'chart.js/auto';
 import { Fundo } from "@/components/Fundo/fundo";
 import styles from "./style.module.css";
 import ChartDataLabels from "chartjs-plugin-datalabels";
@@ -8,57 +8,70 @@ import GraficoBarra from "@/components/GraficoBarra/GraficoBarra";
 import GraficoCircular from "@/components/GraficoCircular/GraficoCircular";
 import LoadingBar from "@/components/Loading";
 import Cabecalho from "@/components/Cabecalho/cabecalho";
-import api from "@/client/api";
 import withAuthorization from '@/utils/withAuthorization';
-import { useUser } from "@/contexts/UserContext";
 import withAuth from "@/utils/auth";
-import sendLog from '@/utils/logHelper';
+import { useUser } from "@/contexts/UserContext";
+// // import sendLog from '@/utils/logHelper';
 
+// HOOKS
+import useFetchChamadasAbertasProfessor from '@/hooks/useFetchChamadasAbertasProfessor';
+import useFetchFrequencia from '@/hooks/useFetchFrequencia';
+import useFetchHistoricoSemanal from '@/hooks/useFetchHistoricoSemanal';
+import useFetchMediaSemanal from '@/hooks/useFetchMediaSemanal';
+
+import Chart from 'chart.js/auto';
 Chart.register(ChartDataLabels);
 
-const Frequencia = () => {
+function Frequencia() {
   const { user } = useUser();
-  const jwt = user ? user.sub.JWT : null;
-  const [idProfessor, setIdProfessor] = useState(user ? user.sub.id_professor : null);
-  const [numAlunosData, setNumAlunosData] = useState(null);
-  const [idChamada, setIdChamada] = useState();
-  const [presentes, setPresentes] = useState();
-  const [ausentes, setAusentes] = useState();
-  const [totalAlunos, setTotalAlunos] = useState();
-  const [porcentagemPresenca, setPorcentagemPresenca] = useState(null);
-  const [mediaSemanalData, setMediaSemanalData] = useState([]);
+  const jwt = user?.sub?.JWT;
+  const idProfessor = user?.sub?.id_professor;
+
+  // Estados para ID da chamada/turma selecionada
+  const [idChamada, setIdChamada] = useState(null);
+  const [turma, setTurmaId] = useState(null);
+
+  // Estado para a progress bar
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [chamadasAbertas, setChamadasAbertas] = useState([]);
-  const [turma, setTurmaId] = useState();
 
+  // 1) Chamadas abertas
+  const {
+    chamadasAbertas,
+    loading: loadingCA,
+    error: errorCA
+  } = useFetchChamadasAbertasProfessor(idProfessor, jwt);
+
+  // 2) Frequencia de uma chamada
+  const {
+    frequenciaData,
+    loading: loadingFreq,
+    error: errorFreq
+  } = useFetchFrequencia(idProfessor, idChamada, jwt);
+
+  // 3) Histórico semanal
+  const {
+    historicoSemanal,
+    loading: loadingHist,
+    error: errorHist
+  } = useFetchHistoricoSemanal(turma, jwt);
+
+  // 4) Média semanal
+  const {
+    mediaSemanal,
+    loading: loadingMed,
+    error: errorMed
+  } = useFetchMediaSemanal(turma, jwt);
+
+  // Ao carregar chamadas abertas, pega a primeira para exibir
   useEffect(() => {
-    if (user) {
-      setIdProfessor(user.sub.id_professor);
-      sendLog('Usuário detectado e ID do professor atualizado.', 'info');
+    if (chamadasAbertas && chamadasAbertas.length > 0) {
+      setIdChamada(chamadasAbertas[0].id_chamada);
+      setTurmaId(chamadasAbertas[0].id_novo); // ou id_turma, conforme o back retorne
     }
-  }, [user]);
+  }, [chamadasAbertas]);
 
-  const fetchChamadasAbertas = useCallback(() => {
-    api.professor
-      .chamadasAbertas(idProfessor, jwt)
-      .then((response) => {
-        console.log("Chamadas abertas:", response.data);
-        setChamadasAbertas(response.data);
-        setIdChamada(response.data[0]?.id_chamada);
-        setTurmaId(response.data[0]?.id_novo);
-        sendLog('Chamadas abertas recebidas com sucesso.', 'success');
-      })
-      .catch((error) => {
-        // console.error("Erro ao buscar as chamadas abertas:", error);
-        sendLog(`Erro ao buscar chamadas abertas: ${error.message}`, 'error');
-      });
-  }, [idProfessor, jwt]);
-
+  // Exemplo de "loading progress" a cada X tempo (opcional)
   useEffect(() => {
-    fetchChamadasAbertas();
-  }, [fetchChamadasAbertas]);
-
-  const startLoadingProgress = useCallback(() => {
     let progress = 0;
     const interval = 1000;
     const totalSteps = 10;
@@ -67,73 +80,38 @@ const Frequencia = () => {
       if (progress < 100) {
         progress += 100 / totalSteps;
         setLoadingProgress(progress);
-        sendLog(`Progresso de carregamento atualizado: ${progress}%`, 'info');
       } else {
         clearInterval(progressInterval);
         setLoadingProgress(0);
-        sendLog('Progresso de carregamento concluído e reiniciado.', 'info');
-        setTimeout(() => {
-          startLoadingProgress();
-        }, 10000);
+        // se quiser recarregar alguma coisa a cada 10 seg, faça aqui
       }
     }, interval);
 
-    return progressInterval;
+    return () => clearInterval(progressInterval);
   }, []);
 
-  useEffect(() => {
-    startLoadingProgress();
-  }, [startLoadingProgress]);
+  // Extrair dados de frequencia
+  const presentes = frequenciaData?.["Alunos presentes"] || 0;
+  const ausentes = frequenciaData?.["Faltam a chegar"] || 0;
+  const totalAlunos = frequenciaData?.["Total de Alunos"] || 0;
 
-  useEffect(() => {
-    if (loadingProgress === 100) {
-      fetchChamadasAbertas();
-      // fetchDados();
-    }
-  }, [loadingProgress, fetchChamadasAbertas]);
+  // Extrair porcentagem do historicoSemanal
+  let porcentagemPresenca = null;
+  if (historicoSemanal && historicoSemanal.porcentagem_presenca) {
+    porcentagemPresenca = parseFloat(historicoSemanal.porcentagem_presenca).toFixed(2);
+  }
 
-  const fetchDados = useCallback(() => {
-    return new Promise((resolve, reject) => {
-      api.professor
-        .frequencia(idProfessor, idChamada, jwt)
-        .then((response) => {
-          console.log("Dados recebidos para a frequência:", response.data);
-          setNumAlunosData(response.data);
-          sendLog('Dados de frequência recebidos com sucesso.', 'success');
-          resolve();
-        })
-        .catch((error) => {
-          console.error("Erro ao buscar os dados:", error);
-          sendLog(`Erro ao buscar dados de frequência: ${error.message}`, 'error');
-          reject();
-        });
-    });
-  }, [idProfessor, idChamada, jwt]);
-
-  useEffect(() => {
-    fetchDados();
-  }, [fetchDados]);
-
-  useEffect(() => {
-    if (numAlunosData) {
-      setAusentes(numAlunosData["Faltam a chegar"]);
-      setPresentes(numAlunosData["Alunos presentes"]);
-      setTotalAlunos(numAlunosData["Total de Alunos"]);
-      sendLog(`Dados de presença atualizados: Presentes ${presentes}, Ausentes ${ausentes}, Total ${totalAlunos}`, 'info');
-    }
-  }, [numAlunosData]);
-
+  // Construir dados do gráfico circular
   const GraficoCircularData = {
     labels: ["Presença", "Ausência"],
     datasets: [
       {
         label: "Presença / Ausência",
         data: [presentes, ausentes],
-        backgroundColor: ["rgba(75, 192, 192, 0.2)", "rgba(255, 99, 132, 0.2)"],
-      },
-    ],
+        backgroundColor: ["rgba(75, 192, 192, 0.2)", "rgba(255, 99, 132, 0.2)"]
+      }
+    ]
   };
-
   const GraficoCircularOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -142,110 +120,69 @@ const Frequencia = () => {
         formatter: (value, context) => {
           let sum = 0;
           let dataArr = context.chart.data.datasets[0].data;
-          dataArr.forEach((data) => {
-            sum += data;
-          });
-          let percentage = ((value * 100) / sum);
+          dataArr.forEach((data) => (sum += data));
+          let percentage = (value * 100) / sum;
           return isNaN(percentage) ? "" : percentage.toFixed(2) + "%";
         },
         color: "#fff",
-        anchor: "center",
+        anchor: "center"
       },
       legend: {
-        position: "left",
+        position: "left"
       },
       title: {
         display: true,
-        text: "",
-      },
-    },
+        text: ""
+      }
+    }
   };
 
-  const fetchPorcentagemPresenca = useCallback(() => {
-    api.professor
-      .historicoSemanal(turma, jwt)
-      .then((response) => {
-        if (response.data && response.data.porcentagem_presenca) {
-          setPorcentagemPresenca(parseFloat(response.data.porcentagem_presenca).toFixed(2));
-        } else {
-          console.error("Não foi possível encontrar 'porcentagem_presenca' nos dados:", response.data);
-        }
-      })
-      .catch((error) => {
-        console.error("Erro ao buscar a porcentagem de presença:", error);
-      });
-  }, [turma, jwt]);
+  // Dias da semana p/ gráfico de barras
+  const diasDaSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+  const labels = mediaSemanal?.map((item) => diasDaSemana[item.dia_semana]) || [];
+  const dataValues = mediaSemanal?.map((item) => parseFloat(item.porcentagem_presenca)) || [];
 
-  useEffect(() => {
-    fetchPorcentagemPresenca();
-  }, [fetchPorcentagemPresenca]);
-
-  const diasDaSemana = [
-    "Domingo",
-    "Segunda",
-    "Terça",
-    "Quarta",
-    "Quinta",
-    "Sexta",
-    "Sábado",
-  ];
-
-  const fetchMediaSemanal = useCallback(() => {
-    api.professor
-      .mediaSemanal(turma, jwt)
-      .then((response) => {
-        setMediaSemanalData(response.data);
-      })
-      .catch((error) => {
-        console.error("Erro ao buscar a média semanal:", error);
-      });
-  }, [turma, jwt]);
-
-  useEffect(() => {
-    fetchMediaSemanal();
-  }, [fetchMediaSemanal]);
-
+  // Construir dados do gráfico de barras
+  const GraficoBarraData = {
+    labels,
+    datasets: [
+      {
+        label: "Frequência",
+        data: dataValues,
+        backgroundColor: "rgba(75, 192, 192, 0.2)",
+        borderColor: "rgba(75, 192, 192, 1)",
+        borderWidth: 2
+      }
+    ]
+  };
   const GraficoBarraOptions = {
     scales: {
       y: {
         beginAtZero: true,
         ticks: {
-          min: 0,
-          max: 100,
-          stepSize: 10,
-          callback: function (value) {
-            return value + "%";
-          },
-        },
-      },
+          callback: (value) => value + "%"
+        }
+      }
     },
     plugins: {
       datalabels: {
         formatter: (value) => (value === 100 ? "" : value + "%"),
         color: "#fff",
-        anchor: "end",
+        anchor: "end"
       },
       legend: {
-        display: false,
-      },
-    },
+        display: false
+      }
+    }
   };
 
-  const labels = mediaSemanalData.map(item => diasDaSemana[item.dia_semana]);
-  const dataValues = mediaSemanalData.map(item => parseFloat(item.porcentagem_presenca));
-
-  const GraficoBarraData = {
-    labels: labels,
-    datasets: [
-      {
-        label: "Frequencia",
-        data: dataValues,
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-        borderColor: "rgba(75, 192, 192, 1)",
-        borderWidth: 2,
-      },
-    ],
-  };
+  // Checando erro ou loading
+  if (loadingCA || loadingFreq || loadingHist || loadingMed) {
+    return <p>Carregando...</p>;
+  }
+  if (errorCA || errorFreq || errorHist || errorMed) {
+    return <p>Ocorreu um erro ao carregar os dados.</p>;
+  }
 
   return (
     <>
@@ -258,23 +195,23 @@ const Frequencia = () => {
             <div className={styles.info_center}>
               <h2>Presenças Marcadas</h2>
               <h3>
-                {numAlunosData
-                  ? `${presentes || 0}/${totalAlunos}`
+                {totalAlunos > 0
+                  ? `${presentes}/${totalAlunos}`
                   : "Sem chamada Aberta."}
               </h3>
             </div>
             <div className={styles.graficoCircular}>
-              {numAlunosData && (
+              {totalAlunos > 0 && (
                 <GraficoCircular
                   data={GraficoCircularData}
                   options={GraficoCircularOptions}
-                  className={styles.Doughnut}
                 />
               )}
             </div>
           </div>
         </div>
       </Fundo>
+
       <Fundo className={styles.Fundo}>
         <div className={styles.container_center}>
           <div className={styles.tituloGrafico}>
@@ -282,14 +219,11 @@ const Frequencia = () => {
               <GraficoBarra
                 data={GraficoBarraData}
                 options={GraficoBarraOptions}
-                className={styles.Bar}
               />
             </div>
             <h2>
-              Frequencia Semanal: <br />
-              {porcentagemPresenca
-                ? porcentagemPresenca + "%"
-                : "Sem chamada Aberta."}
+              Frequência Semanal: <br />
+              {porcentagemPresenca ? porcentagemPresenca + "%" : "Sem dados"}
             </h2>
           </div>
         </div>
@@ -298,4 +232,7 @@ const Frequencia = () => {
   );
 }
 
-export default withAuth(withAuthorization(Frequencia, ["Professor"]), ["Professor"]);
+export default withAuth(
+  withAuthorization(Frequencia, ["Professor"]),
+  ["Professor"]
+);

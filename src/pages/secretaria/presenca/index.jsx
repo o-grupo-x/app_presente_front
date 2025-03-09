@@ -1,84 +1,52 @@
+import React, { useState } from "react";
 import Navbar from "@/components/Navbar/navbar";
 import styles from "./style.module.css";
 import { Fundo } from "@/components/Fundo/fundo";
 import Cabecalho from "@/components/Cabecalho/cabecalho";
-import React, { useState,useEffect  } from "react";
 import { useUser } from "@/contexts/UserContext";
 import withAuthorization from '@/utils/withAuthorization';
-import api from "@/client/api";
 import withAuth from "@/utils/auth";
-import sendLog from "@/utils/logHelper";
 
-const Presenca = () => {
+// HOOK
+import useMarkPresence from "@/hooks/useMarkPresence";
+
+function Presenca() {
   const { user } = useUser();
-  const jwt = user ? user.sub.JWT : null;
-  const id_secretaria = user ? user.id_secretaria : null;
-  const cargo = user ? user.Cargo : null;
-  const [ra, setRa] = useState(null);
-  const [serverResponse, setServerResponse] = useState(null);
+  const jwt = user?.sub?.JWT;
+  const id_secretaria = user?.sub?.id_secretaria;
+  const cargo = user?.sub?.cargo;
+
+  const [ra, setRa] = useState("");
   const [buttonClicked, setButtonClicked] = useState(false);
 
+  // Hook p/ marcar presença
+  const { markPresence, serverResponse, loading, error } = useMarkPresence(jwt);
 
-  useEffect(() => {
-    if (user) {
-      const id_secretaria = user.sub.id_secretaria;
-      const jwt = user.sub.JWT;
-      const cargo = user.sub.cargo;
-      sendLog('User data loaded for Presenca component', 'info');
-    }
-  }, [user]);
-
-
-  const MarcarPresenca = () => {
-    const body = {
-      ra: parseInt(ra, 10),
-      cargo_manual:cargo,
-      id_manual:id_secretaria
-    };
-
-    api.professor
-      .presenca(body,jwt)
-      .then((response) => {
-        sendLog('Presence marked successfully', 'info');
-        // console.log("Chamada marcada com sucesso:", response.data);
-        setServerResponse(response.data);
-        setButtonClicked(true);
-      })
-      .catch((error) => {
-        // console.error("Erro:", error);
-        sendLog(`Error marking presence: ${error}`, 'error');
-        if (error.response) {
-          console.error("Detalhes do erro:", error.response.data);
-          setServerResponse(error.response.data);
-          setButtonClicked(true);
-        }
+  const handleMarcarPresenca = async () => {
+    setButtonClicked(true);
+    try {
+      await markPresence({
+        ra: parseInt(ra, 10),
+        cargo_manual: cargo,
+        id_manual: id_secretaria
       });
+    } catch (err) {
+      console.error("Erro ao marcar presença:", err);
+    }
   };
 
   const renderResponse = () => {
-    if (!buttonClicked) {
-      return null;
-    } else {
-      const successIcon = "✅";
-      const errorIcon = "❌";
-      const responseMessage = serverResponse.mensagem ? serverResponse.mensagem : serverResponse;
-  
-      sendLog(`Rendering server response: ${responseMessage}`, 'info');
-
-      if (responseMessage === "presenca registrada") {
-        return (
-          <div>
-            {successIcon} {responseMessage}
-          </div>
-        );
+    if (!buttonClicked) return null;
+    if (loading) return <p>Carregando...</p>;
+    if (error) return <p>Erro ao marcar presença!</p>;
+    if (serverResponse) {
+      if (serverResponse.mensagem === "presenca registrada") {
+        return <div>✅ {serverResponse.mensagem}</div>;
       } else {
-        return (
-          <div>
-            {errorIcon} {responseMessage}
-          </div>
-        );
+        return <div>❌ {serverResponse.mensagem || serverResponse}</div>;
       }
     }
+    return null;
   };
 
   return (
@@ -95,11 +63,11 @@ const Presenca = () => {
                 className={styles.input}
                 type="text"
                 placeholder="Informe o RA"
-                value={ra || ""}
+                value={ra}
                 onChange={(e) => setRa(e.target.value)}
-              ></input>
+              />
             </div>
-            <button className={styles.botao} onClick={MarcarPresenca}>
+            <button className={styles.botao} onClick={handleMarcarPresenca}>
               Confirmar Presença
             </button>
           </div>
@@ -109,6 +77,4 @@ const Presenca = () => {
   );
 }
 
-// export default Presenca;
-
-export default withAuth(withAuthorization(Presenca,["Secretaria"]),['Secretaria']);
+export default withAuth(withAuthorization(Presenca, ["Secretaria"]), ["Secretaria"]);
