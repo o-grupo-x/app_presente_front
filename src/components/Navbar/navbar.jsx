@@ -8,6 +8,7 @@ import {
   faBell,
   faTachometerAlt,
   faUserPlus,
+  faTableList,
 } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
@@ -23,7 +24,7 @@ const Navbar = () => {
   useEffect(() => {
     if (user) {
       setUserType(user.sub.cargo);
-      console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", user.sub);
+      // console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", user.sub);
       if (user.sub.nome) {
         const updatedCourse = user.sub.nome.replace(/_/g, " ");
         setUserCurso(updatedCourse);
@@ -53,6 +54,7 @@ const Navbar = () => {
         { name: "Chamada", icon: faUserCheck, link: "/professor/home" },
         { name: "Frequência", icon: faHistory, link: "/professor/frequencia" },
         { name: "Presença", icon: faChalkboardTeacher, link: "/professor/presenca" },
+        { name: "Relatorio", icon: faTableList, link: "/professor/relatorio" },
       ];
     }
 

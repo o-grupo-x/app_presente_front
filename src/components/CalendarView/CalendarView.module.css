@@ -1,0 +1,158 @@
+.calendarContainer {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+  }
+  
+  .calendarHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .calendarTitle {
+    font-size: 1.2rem;
+    margin: 0;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+  
+  .navButton {
+    background-color: #0070f3;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .navButton:hover {
+    background-color: #0060d3;
+  }
+  
+  .viewControls {
+    display: flex;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #ddd;
+    background-color: #f8f9fa;
+  }
+  
+  .viewButton {
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    margin-right: 0.5rem;
+    border-radius: 4px;
+  }
+  
+  .viewButton:hover {
+    background-color: #f1f3f5;
+  }
+  
+  .activeView {
+    background-color: #0070f3;
+    color: white;
+    border-color: #0070f3;
+  }
+  
+  .todayButton {
+    margin-left: auto;
+    padding: 0.5rem 1rem;
+    background-color: #f1f3f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .todayButton:hover {
+    background-color: #e9ecef;
+  }
+  
+  .calendarGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: white;
+  }
+  
+  .dayHeader {
+    padding: 0.75rem;
+    text-align: center;
+    font-weight: 500;
+    color: #495057;
+    border-bottom: 1px solid #ddd;
+    background-color: #f8f9fa;
+  }
+  
+  .calendarDay {
+    aspect-ratio: 1/1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e9ecef;
+    cursor: pointer;
+  }
+  
+  .calendarDay:hover {
+    background-color: #f1f3f5;
+  }
+  
+  .otherMonth {
+    color: #adb5bd;
+  }
+  
+  .selectedDay {
+    background-color: #e7f5ff;
+    color: #0070f3;
+    font-weight: bold;
+  }
+  
+  .weekDay {
+    aspect-ratio: 1/1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e9ecef;
+    cursor: pointer;
+    padding: 0.5rem;
+  }
+  
+  .weekDay:hover {
+    background-color: #f1f3f5;
+  }
+  
+  .weekDayNumber {
+    font-size: 1.5rem;
+    font-weight: 500;
+  }
+  
+  .weekDayName {
+    font-size: 0.8rem;
+    color: #6c757d;
+  }
+  
+  @media (max-width: 768px) {
+    .calendarGrid {
+      font-size: 0.9rem;
+    }
+    
+    .calendarTitle {
+      font-size: 1rem;
+    }
+    
+    .weekDayNumber {
+      font-size: 1.2rem;
+    }
+  }

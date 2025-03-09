@@ -1,73 +1,47 @@
-
-import React, { useEffect, useState } from "react";
+// pages/professor/Presenca/index.jsx
+import React, { useState } from "react";
 import Navbar from "@/components/Navbar/navbar";
 import styles from "./style.module.css";
 import { Fundo } from "@/components/Fundo/fundo";
 import Cabecalho from "@/components/Cabecalho/cabecalho";
 import { useUser } from "@/contexts/UserContext";
 import withAuthorization from '@/utils/withAuthorization';
-import api from "@/client/api";
 import withAuth from "@/utils/auth";
-import sendLog from '@/utils/logHelper';
+import useMarkPresenceProfessor from '@/hooks/useMarkPresenceProfessor';
 
-const Presenca = () => {
+function Presenca() {
   const { user } = useUser();
-  const jwt = user ? user.sub.JWT : null;
-  const cargo = user ? user.sub.cargo : null;
-  const id_professor = user ? user.sub.id_professor : null;
-  const [ra, setRa] = useState(null);
-  const [serverResponse, setServerResponse] = useState(null);
+  const jwt = user?.sub?.JWT;
+  const cargo = user?.sub?.cargo;
+  const id_professor = user?.sub?.id_professor;
+  const [ra, setRa] = useState("");
   const [buttonClicked, setButtonClicked] = useState(false);
 
+  // Hook p/ marcar presença
+  const { markPresence, serverResponse, loading, error } = useMarkPresenceProfessor(jwt);
 
-  useEffect(() => {
-    if (user) {
-      // console.log(user.sub);
-      const jwt = user.sub.JWT;
-      const cargo = user.sub.cargo
-      const id_professor = user.sub.id_professor
-      sendLog(`User data loaded: ${JSON.stringify(user.sub)}`, 'debug');
-    }
-  }, [user]);
-
-
-  const MarcarPresenca = () => {
-    const body = {
-      ra: parseInt(ra, 10),
+  const handlePresenca = () => {
+    setButtonClicked(true);
+    markPresence({
+      ra,
       cargo_manual: cargo,
-      id_manual:id_professor,
-    };
-
-    sendLog(`Attempting to mark presence for RA: ${ra}`, 'info');
-
-    api.professor
-      .presenca(body,jwt)
-      .then((response) => {
-        console.log("Chamada marcada com sucesso:", response.data);
-        setServerResponse(response.data);
-        setButtonClicked(true);
-        sendLog(`Presence marked successfully for RA: ${ra}`, 'success');
-      })
-      .catch((error) => {
-        console.error("Erro:", error);
-        sendLog(`Error marking presence for RA: ${ra} - ${error.message}`, 'error');
-        if (error.response) {
-          console.error("Detalhes do erro:", error.response.data);
-          setServerResponse(error.response.data);
-          setButtonClicked(true);
-        }
-      });
+      id_manual: id_professor,
+    });
   };
 
   const renderResponse = () => {
-    if (!buttonClicked) {
-      return null;
-    } else {
+    if (!buttonClicked) return null;
+
+    if (loading) {
+      return <p>Carregando...</p>;
+    }
+    if (error) {
+      return <p style={{ color: 'red' }}>Erro ao marcar presença!</p>;
+    }
+    if (serverResponse) {
       const successIcon = "✅";
       const errorIcon = "❌";
-  
-      const responseMessage = serverResponse.mensagem ? serverResponse.mensagem : serverResponse;
-  
+      const responseMessage = serverResponse.mensagem || serverResponse;
       if (responseMessage === "presenca registrada") {
         return (
           <div>
@@ -82,6 +56,7 @@ const Presenca = () => {
         );
       }
     }
+    return null;
   };
 
   return (
@@ -98,11 +73,11 @@ const Presenca = () => {
                 className={styles.input}
                 type="text"
                 placeholder="Informe o RA"
-                value={ra || ""}
+                value={ra}
                 onChange={(e) => setRa(e.target.value)}
-              ></input>
+              />
             </div>
-            <button className={styles.botao} onClick={MarcarPresenca}>
+            <button className={styles.botao} onClick={handlePresenca}>
               Confirmar Presença
             </button>
           </div>
@@ -112,4 +87,4 @@ const Presenca = () => {
   );
 }
 
-export default withAuth(withAuthorization(Presenca,["Professor"]),['Professor']);
+export default withAuth(withAuthorization(Presenca, ["Professor"]), ["Professor"]);

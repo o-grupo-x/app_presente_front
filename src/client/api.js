@@ -1,12 +1,12 @@
 
-require('dotenv').config();
-
-
 import axios from "axios";
 
 
+const backend = process.env.NEXT_PUBLIC_BACK || "http://localhost:8000";
+
 const httpClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND
+  // baseURL: process.env.NEXT_PUBLIC_BACK
+  baseURL: backend,
 });
 
 const api = {
@@ -237,13 +237,13 @@ const api = {
   },
   materia: {
     create: (payload, jwt) =>
-      httpClient.post("api/materia", payload, {
+      httpClient.post("/api/materia", payload, {  
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     listAll: (jwt) =>
-      httpClient.get("api/materia/listAll", {
+      httpClient.get("/api/materia/listAll", {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },

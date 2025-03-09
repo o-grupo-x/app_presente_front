@@ -1,21 +1,21 @@
 import api from "@/client/api";
 
+// Remove the extra "function" keyword and uncomment the function name
 function sendLog(message, level) {
-    // Construa a configuração de headers diretamente aqui, se necessário
     const config = {
-      headers: {
-        'Content-Type': 'application/json'  // Isto é redundante se já configurado globalmente no axios
-      }
+        headers: {
+            'Content-Type': 'application/json'
+        }
     };
 
-    // Passa a configuração como argumento para a função sendLog
+    // Remove extra slashes from function call
     api.usuario.sendLog(message, level, config)
-      .then(response => {
-          console.log('Log sent: ', response.data);
-      })
-      .catch(error => {
-          console.error('Error sending log:', error);
-      });
+        .then(response => {
+            console.log('Log sent: ', response.data);
+        })
+        .catch(error => {
+            console.error('Error sending log:', error);
+        });
 }
 
 export default sendLog;

@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    image: presente-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-network
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Vkhn2W3LudKzzis
+      POSTGRES_DB: presente_db  # Adjust to your DB name
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7
+    command: redis-server --requirepass redis  # Matches your REDIS_PASSWORD
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  # Add frontend if you have a Dockerfile for it
+  # frontend:
+  #   build: ../presente-frontend  # Adjust path
+  #   ports:
+  #     - "3000:3000"  # Adjust port
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
