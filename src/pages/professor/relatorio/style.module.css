@@ -1,0 +1,198 @@
+/* pages/professor/relatorio/style.module.css */
+.container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  
+  .content {
+    flex: 1;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .pageTitle {
+    font-size: 1.8rem;
+    color: #333;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .calendarSection {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .filters {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .formGroup {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .formGroup label {
+    font-weight: 500;
+    color: #495057;
+  }
+  
+  .select {
+    padding: 0.6rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  
+  .loading, .error, .noData {
+    padding: 2rem;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+  }
+  
+  .loading {
+    color: #0070f3;
+  }
+  
+  .error {
+    color: #dc3545;
+  }
+  
+  .noData {
+    color: #6c757d;
+  }
+  
+  .attendanceTable {
+    margin-top: 2rem;
+  }
+  
+  .tableTitle {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  
+  .tableWrapper {
+    overflow-x: auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .attendanceTableContainer {
+    overflow-x: auto;
+  }
+  
+  .attendanceTable {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .nameHeader {
+    position: sticky;
+    left: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+    min-width: 180px;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .dayHeader {
+    min-width: 60px;
+    text-align: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+  }
+  
+  .dayCol {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .dayName {
+    font-size: 0.7rem;
+    color: #6c757d;
+  }
+  
+  .dayNumber {
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  
+  .studentName {
+    position: sticky;
+    left: 0;
+    background-color: white;
+    z-index: 1;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+    text-align: left;
+  }
+  
+  .dayCell {
+    padding: 0.5rem;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .attendanceMarker {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-weight: bold;
+  }
+  
+  .present {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .absent {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .inactive {
+    background-color: #e9ecef;
+    color: #6c757d;
+  }
+  
+  @media (max-width: 992px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .content {
+      padding: 1rem;
+    }
+    
+    .filters {
+      flex-direction: column;
+    }
+  }
