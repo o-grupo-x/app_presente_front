@@ -93,12 +93,38 @@ jobs:
           echo "$EC2_SSH_KEY" > ssh_key.pem
           chmod 400 ssh_key.pem
           ssh -i ssh_key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << EOF
-            echo "Inside SSH: DOCKERHUB_USERNAME is $DOCKERHUB_USERNAME"
+            # Pull the new image
+            docker pull $DOCKERHUB_USERNAME/app_presente_front:staging
+
+            # Start the new container on a temporary port to test it
+            docker run -d --name app_presente_front_staging_new -p 3001:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:staging
+
+            # Wait and check if the new container is healthy
+            echo "Waiting for the new container to become healthy..."
+            for i in {1..10}
+            do
+              if docker inspect app_presente_front_staging_new --format='{{.State.Health.Status}}' | grep -q "healthy"; then
+                echo "New container is healthy!"
+                break
+              fi
+              if [ \$i -eq 10 ]; then
+                echo "New container failed to become healthy!"
+                docker stop app_presente_front_staging_new
+                docker rm app_presente_front_staging_new
+                exit 1
+              fi
+              sleep 3
+            done
+
+            # Stop and remove the old containers
             docker stop app_presente_frontend || true
             docker rm app_presente_frontend || true
             docker stop app_presente_front_staging || true
             docker rm app_presente_front_staging || true
-            docker pull $DOCKERHUB_USERNAME/app_presente_front:staging
+
+            # Rename the new container to the production name and switch ports
+            docker rename app_presente_front_staging_new app_presente_front_staging
+            docker stop app_presente_front_staging
             docker run -d --name app_presente_front_staging -p 3000:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:staging
           EOF
 
@@ -140,9 +166,35 @@ jobs:
           echo "$EC2_SSH_KEY" > ssh_key.pem
           chmod 400 ssh_key.pem
           ssh -i ssh_key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << EOF
-            echo "Inside SSH: DOCKERHUB_USERNAME is $DOCKERHUB_USERNAME"
+            # Pull the new image
+            docker pull $DOCKERHUB_USERNAME/app_presente_front:production
+
+            # Start the new container on a temporary port to test it
+            docker run -d --name app_presente_front_production_new -p 8080:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:production
+
+            # Wait and check if the new container is healthy
+            echo "Waiting for the new container to become healthy..."
+            for i in {1..10}
+            do
+              if docker inspect app_presente_front_production_new --format='{{.State.Health.Status}}' | grep -q "healthy"; then
+                echo "New container is healthy!"
+                break
+              fi
+              if [ \$i -eq 10 ]; then
+                echo "New container failed to become healthy!"
+                docker stop app_presente_front_production_new
+                docker rm app_presente_front_production_new
+                exit 1
+              fi
+              sleep 3
+            done
+
+            # Stop and remove the old container
             docker stop app_presente_front_production || true
             docker rm app_presente_front_production || true
-            docker pull $DOCKERHUB_USERNAME/app_presente_front:production
+
+            # Rename the new container to the production name and switch ports
+            docker rename app_presente_front_production_new app_presente_front_production
+            docker stop app_presente_front_production
             docker run -d --name app_presente_front_production -p 80:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:production
           EOF
