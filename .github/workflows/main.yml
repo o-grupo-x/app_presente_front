@@ -99,16 +99,21 @@ jobs:
             # Start the new container on a temporary port to test it
             docker run -d --name app_presente_front_staging_new -p 3001:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:staging
 
+            # Wait for the container to start (account for HEALTHCHECK start-period)
+            sleep 10
+
             # Wait and check if the new container is healthy
             echo "Waiting for the new container to become healthy..."
-            for i in {1..10}
+            for i in {1..20}
             do
               if docker inspect app_presente_front_staging_new --format='{{.State.Health.Status}}' | grep -q "healthy"; then
                 echo "New container is healthy!"
                 break
               fi
-              if [ \$i -eq 10 ]; then
+              if [ \$i -eq 20 ]; then
                 echo "New container failed to become healthy!"
+                echo "Container logs:"
+                docker logs app_presente_front_staging_new
                 docker stop app_presente_front_staging_new
                 docker rm app_presente_front_staging_new
                 exit 1
@@ -178,16 +183,21 @@ jobs:
             # Start the new container on a temporary port to test it
             docker run -d --name app_presente_front_production_new -p 8080:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:production
 
+            # Wait for the container to start (account for HEALTHCHECK start-period)
+            sleep 10
+
             # Wait and check if the new container is healthy
             echo "Waiting for the new container to become healthy..."
-            for i in {1..10}
+            for i in {1..20}
             do
               if docker inspect app_presente_front_production_new --format='{{.State.Health.Status}}' | grep -q "healthy"; then
                 echo "New container is healthy!"
                 break
               fi
-              if [ \$i -eq 10 ]; then
+              if [ \$i -eq 20 ]; then
                 echo "New container failed to become healthy!"
+                echo "Container logs:"
+                docker logs app_presente_front_production_new
                 docker stop app_presente_front_production_new
                 docker rm app_presente_front_production_new
                 exit 1
