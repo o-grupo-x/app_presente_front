@@ -122,10 +122,16 @@ jobs:
             docker stop app_presente_front_staging || true
             docker rm app_presente_front_staging || true
 
-            # Rename the new container to the production name and switch ports
+            # Rename the new container and ensure it's stopped/removed before starting the final one
             docker rename app_presente_front_staging_new app_presente_front_staging
-            docker stop app_presente_front_staging
+            docker stop app_presente_front_staging || true
+            docker rm app_presente_front_staging || true
+
+            # Start the final container on the correct port
             docker run -d --name app_presente_front_staging -p 3000:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:staging
+
+            # Verify the final container is running
+            docker ps
           EOF
 
   deploy-production:
@@ -193,8 +199,14 @@ jobs:
             docker stop app_presente_front_production || true
             docker rm app_presente_front_production || true
 
-            # Rename the new container to the production name and switch ports
+            # Rename the new container and ensure it's stopped/removed before starting the final one
             docker rename app_presente_front_production_new app_presente_front_production
-            docker stop app_presente_front_production
+            docker stop app_presente_front_production || true
+            docker rm app_presente_front_production || true
+
+            # Start the final container on the correct port
             docker run -d --name app_presente_front_production -p 80:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:production
+
+            # Verify the final container is running
+            docker ps
           EOF
