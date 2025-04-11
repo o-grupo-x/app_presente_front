@@ -1,24 +1,28 @@
-# Especificar a imagem base
-FROM node:18-alpine
-
-# Definir o diretório de trabalho no contêiner
+# Stage 1: Build
+FROM node:18-alpine AS builder
 WORKDIR /app
-
-# Copiar o arquivo package.json e package-lock.json (ou yarn.lock)
 COPY package*.json ./
-
-# Instalar dependências
-RUN npm install
-
-# Copiar os arquivos do projeto para o diretório de trabalho
+RUN npm ci --omit=dev
 COPY . .
-
-# Construir a aplicação Next.js
 RUN npm run build
 
-# Expor a porta que o Next.js vai rodar (normalmente 3000)
+# Stage 2: Runtime
+FROM node:18-alpine
+WORKDIR /app
+RUN apk add --no-cache tini
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/public ./public
+
+# Non-root user
+RUN addgroup -g 1001 -S nodejs && adduser -S -u 1001 nextjs -G nodejs
+USER nextjs
+
 EXPOSE 3000
 
-# Comando para iniciar a aplicação
-CMD ["npm","start"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
 
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["npm", "start"]

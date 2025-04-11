@@ -11,39 +11,119 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
+        uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
-
+          node-version: '18'
+          cache: 'npm'
       - name: Install Dependencies
         working-directory: ./
-        run: npm install
-
+        run: npm ci
       - name: Run Frontend Tests
         working-directory: ./
         run: npm test
+      - name: Archive Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/test-results/**
+            **/*.xml
 
   build:
     runs-on: ubuntu-latest
     needs: test
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-
+        uses: actions/checkout@v4
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
-
+          node-version: '18'
+          cache: 'npm'
+      - name: Install Dependencies
+        working-directory: ./
+        run: npm ci
       - name: Build Frontend
         working-directory: ./
-        run: |
-          npm install
-          npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: npm run build
+      - name: Archive Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            .next/
+            out/
 
-      # Optional: Build Frontend Docker Image
-      - name: Build Docker Image
-        run: docker build -t app_presente_front .
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Build and Push Docker Image
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          docker build -t $DOCKERHUB_USERNAME/app_presente_front:staging .
+          docker push $DOCKERHUB_USERNAME/app_presente_front:staging
+      - name: Deploy to Staging EC2
+        env:
+          EC2_HOST: ${{ secrets.STAGING_EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.STAGING_EC2_SSH_KEY }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          echo "$EC2_SSH_KEY" > ssh_key.pem
+          chmod 400 ssh_key.pem
+          ssh -i ssh_key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'EOF'
+            docker pull $DOCKERHUB_USERNAME/app_presente_front:staging
+            docker stop app_presente_front || true
+            docker rm app_presente_front || true
+            docker run -d --name app_presente_front -p 3000:3000 -e NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} $DOCKERHUB_USERNAME/app_presente_front:staging
+          EOF
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: production
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Build and Push Docker Image
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          docker build -t $DOCKERHUB_USERNAME/app_presente_front:production .
+          docker push $DOCKERHUB_USERNAME/app_presente_front:production
+      - name: Deploy to Production EC2
+        env:
+          EC2_HOST: ${{ secrets.PRODUCTION_EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.PRODUCTION_EC2_SSH_KEY }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          echo "$EC2_SSH_KEY" > ssh_key.pem
+          chmod 400 ssh_key.pem
+          ssh -i ssh_key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'EOF'
+            docker pull $DOCKERHUB_USERNAME/app_presente_front:production
+            docker stop app_presente_front || true
+            docker rm app_presente_front || true
+            docker run -d --name app_presente_front -p 3000:3000 -e NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} $DOCKERHUB_USERNAME/app_presente_front:production
+          EOF
