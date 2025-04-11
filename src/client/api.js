@@ -1,7 +1,6 @@
 
 import axios from "axios";
 
-
 const backend = "https://api.odeiojava.com.br";
 
 const httpClient = axios.create({
