@@ -22,7 +22,7 @@ jobs:
         run: npm ci
       - name: Run Frontend Tests
         working-directory: ./
-        run: npm test || true # Skip test failures
+        run: npm test || true
       - name: Archive Test Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -88,16 +88,18 @@ jobs:
           EC2_HOST: ${{ secrets.STAGING_EC2_HOST }}
           EC2_SSH_KEY: ${{ secrets.STAGING_EC2_SSH_KEY }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
         run: |
           echo "$EC2_SSH_KEY" > ssh_key.pem
           chmod 400 ssh_key.pem
-          ssh -i ssh_key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'EOF'
+          ssh -i ssh_key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << EOF
+            echo "Inside SSH: DOCKERHUB_USERNAME is $DOCKERHUB_USERNAME"
             docker stop app_presente_frontend || true
             docker rm app_presente_frontend || true
             docker stop app_presente_front_staging || true
             docker rm app_presente_front_staging || true
             docker pull $DOCKERHUB_USERNAME/app_presente_front:staging
-            docker run -d --name app_presente_front_staging -p 3000:3000 -e NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} $DOCKERHUB_USERNAME/app_presente_front:staging
+            docker run -d --name app_presente_front_staging -p 3000:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:staging
           EOF
 
   deploy-production:
@@ -129,12 +131,12 @@ jobs:
           EC2_HOST: ${{ secrets.PRODUCTION_EC2_HOST }}
           EC2_SSH_KEY: ${{ secrets.PRODUCTION_EC2_SSH_KEY }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
         run: |
           echo "$EC2_SSH_KEY" > ssh_key.pem
           chmod 400 ssh_key.pem
-          ssh -i ssh_key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'EOF'
+          ssh -i ssh_key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << EOF
+            echo "Inside SSH: DOCKERHUB_USERNAME is $DOCKERHUB_USERNAME"
             docker stop app_presente_front_production || true
             docker rm app_presente_front_production || true
             docker pull $DOCKERHUB_USERNAME/app_presente_front:production
-            docker run -d --name app_presente_front_production -p 80:3000 -e NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }} $DOCKERHUB_USERNAME/app_presente_front:production
-          EOF
