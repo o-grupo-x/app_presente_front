@@ -126,6 +126,10 @@ jobs:
           docker build -t $DOCKERHUB_USERNAME/app_presente_front:production .
           docker push $DOCKERHUB_USERNAME/app_presente_front:production
           echo "Pushed $DOCKERHUB_USERNAME/app_presente_front:production"
+      - name: Debug EC2 Host
+        run: echo "EC2_HOST is $EC2_HOST"
+        env:
+          EC2_HOST: ${{ secrets.PRODUCTION_EC2_HOST }}
       - name: Deploy to Production EC2
         env:
           EC2_HOST: ${{ secrets.PRODUCTION_EC2_HOST }}
@@ -140,3 +144,5 @@ jobs:
             docker stop app_presente_front_production || true
             docker rm app_presente_front_production || true
             docker pull $DOCKERHUB_USERNAME/app_presente_front:production
+            docker run -d --name app_presente_front_production -p 80:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:production
+          EOF
