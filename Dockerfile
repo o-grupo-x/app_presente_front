@@ -1,20 +1,19 @@
 # Stage 1: Build
 FROM node:18-alpine AS builder
 WORKDIR /app
-# Install build dependencies
 COPY package*.json ./
 RUN npm ci
-# Copy source code and build
 COPY . .
 RUN npm run build
-# Install production dependencies
 RUN npm ci --omit=dev
 
 # Stage 2: Runtime
 FROM node:18-alpine
 WORKDIR /app
-# Install tini with updated repositories
-RUN apk update && apk add --no-cache tini
+# Use a specific Alpine repository mirror
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.18/main" > /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.18/community" >> /etc/apk/repositories && \
+    apk update && apk add --no-cache tini
 # Copy necessary artifacts
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
