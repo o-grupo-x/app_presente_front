@@ -26,7 +26,7 @@ FROM node:18-alpine AS runner
 WORKDIR /app
 
 # Instala tini para gerenciamento de processos
-RUN apk add --no-cache tini
+ENTRYPOINT ["tini", "--"]
 
 # Copia apenas os arquivos necessários da build
 COPY --from=builder /app/.next ./.next
