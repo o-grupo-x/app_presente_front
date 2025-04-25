@@ -1,15 +1,35 @@
+# Ignora a pasta node_modules porque as dependências devem ser instaladas dentro da imagem, garantindo consistência entre ambientes
 node_modules
+
+# Arquivo de log gerado pelo npm em caso de erro — desnecessário na imagem
 npm-debug.log
+
+# O próprio Dockerfile não precisa ser copiado para dentro da imagem — ele é usado apenas na construção
 Dockerfile
+
+# Mesmo motivo do acima — não é necessário copiar o .dockerignore para a imagem final
 .dockerignore
+
+# Ignora os metadados do Git (como histórico, branches, etc.) — não são úteis na imagem
 .git
+
+# Arquivo de configuração do Git que também é irrelevante para a imagem Docker
 .gitignore
+
+# Configurações do VS Code específicas do desenvolvedor — não fazem parte da aplicação
 .vscode
-*.md
-*.log
+
+# Arquivo que contém variáveis de ambiente — evitar incluir isso por segurança
 .env
+
+# Arquivos de ambiente com sufixos (ex: .env.dev, .env.prod) — também devem ser evitados por segurança
 .env.*
+
+# Arquivos gerados pelo TypeScript contendo metadados da compilação — desnecessários na imagem
 *.tsbuildinfo
+
+# Diretório com relatórios de cobertura de testes — não usados na execução da aplicação
 coverage
-dist
-build
+
+# Arquivo de orquestração local (docker-compose) — útil no dev, mas não precisa estar dentro da imagem
+docker-compose.yml
