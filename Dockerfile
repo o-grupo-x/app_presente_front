@@ -10,7 +10,6 @@ RUN npm ci --omit=dev
 # ====== Stage 2: Runtime ======
 FROM node:18-alpine AS runner
 WORKDIR /app
-# Install tini
 RUN apk add --no-cache tini
 ENTRYPOINT ["/sbin/tini", "--"]
 COPY --from=builder /app/.next ./.next

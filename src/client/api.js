@@ -266,6 +266,9 @@ const api = {
       },
     }),
   },
+  health: {
+    check: () => httpClient.get("/api/health"),
+  },
 };
 
 export default api;
