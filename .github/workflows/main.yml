@@ -2,9 +2,12 @@ name: Frontend CI/CD
 
 on:
   push:
-    branches: [master]
+    branches:
+      - dev
+      - main
   pull_request:
-    branches: [master]
+    branches:
+      - release/*
 
 jobs:
   test:
@@ -12,18 +15,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      - name: Install Dependencies
-        working-directory: ./
+      - name: Install dependencies
         run: npm ci
-      - name: Run Frontend Tests
-        working-directory: ./
-        run: npm test || true
-      - name: Archive Test Results
+      - name: Run linting
+        run: npm run lint
+        continue-on-error: true
+      - name: Run tests
+        run: npm test
+      - name: Archive test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -35,188 +39,81 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: test
+    if: github.event_name == 'pull_request' && startsWith(github.ref, 'refs/heads/release/')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      - name: Install Dependencies
-        working-directory: ./
+      - name: Install dependencies
         run: npm ci
-      - name: Build Frontend
-        working-directory: ./
+      - name: Build frontend
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
         run: npm run build
-      - name: Archive Build Artifacts
+      - name: Build and push Docker image
+        run: |
+          docker build -t guilherme310402/app_presente_front:latest .
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker push guilherme310402/app_presente_front:latest
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Archive build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-output
           path: |
             .next/
             out/
+      - name: Notify on release
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: 'your-channel-id'
+          text: "New release version built: ${{ github.sha }} for app_presente_front"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
-  deploy-staging:
+  deploy-stage:
     runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    needs: test
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          node-version: '18'
-      - name: Debug DockerHub Username
-        run: echo "DOCKERHUB_USERNAME is $DOCKERHUB_USERNAME"
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      - name: Build and Push Docker Image
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          credentials_json: ${{ secrets.GOOGLE_CLOUD_KEYS }}
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Configure GKE cluster
         run: |
-          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-          docker build -t $DOCKERHUB_USERNAME/app_presente_front:staging .
-          docker push $DOCKERHUB_USERNAME/app_presente_front:staging
-          echo "Pushed $DOCKERHUB_USERNAME/app_presente_front:staging"
-      - name: Deploy to Staging EC2
-        env:
-          EC2_HOST: ${{ secrets.STAGING_EC2_HOST }}
-          EC2_SSH_KEY: ${{ secrets.STAGING_EC2_SSH_KEY }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
+      - name: Deploy to stage
         run: |
-          echo "$EC2_SSH_KEY" > ssh_key.pem
-          chmod 400 ssh_key.pem
-          ssh -i ssh_key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << EOF
-            # Pull the new image
-            docker pull $DOCKERHUB_USERNAME/app_presente_front:staging
-
-            # Start the new container on a temporary port to test it
-            docker run -d --name app_presente_front_staging_new -p 3001:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:staging
-
-            # Wait for the container to start (account for HEALTHCHECK start-period)
-            sleep 10
-
-            # Wait and check if the new container is healthy
-            echo "Waiting for the new container to become healthy..."
-            for i in {1..20}
-            do
-              if docker inspect app_presente_front_staging_new --format='{{.State.Health.Status}}' | grep -q "healthy"; then
-                echo "New container is healthy!"
-                break
-              fi
-              if [ \$i -eq 20 ]; then
-                echo "New container failed to become healthy!"
-                echo "Container logs:"
-                docker logs app_presente_front_staging_new
-                docker stop app_presente_front_staging_new
-                docker rm app_presente_front_staging_new
-                exit 1
-              fi
-              sleep 3
-            done
-
-            # Stop and remove the old containers
-            docker stop app_presente_frontend || true
-            docker rm app_presente_frontend || true
-            docker stop app_presente_front_staging || true
-            docker rm app_presente_front_staging || true
-
-            # Rename the new container and ensure it's stopped/removed before starting the final one
-            docker rename app_presente_front_staging_new app_presente_front_staging
-            docker stop app_presente_front_staging || true
-            docker rm app_presente_front_staging || true
-
-            # Start the final container on the correct port
-            docker run -d --name app_presente_front_staging -p 3000:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:staging
-
-            # Verify the final container is running
-            docker ps
-          EOF
+          kubectl -n stage-app-presente apply -f frontend-deployment.yaml -f frontend-service.yaml
 
   deploy-production:
     runs-on: ubuntu-latest
-    needs: deploy-staging
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          node-version: '18'
-      - name: Debug DockerHub Username
-        run: echo "DOCKERHUB_USERNAME is $DOCKERHUB_USERNAME"
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      - name: Build and Push Docker Image
-        env:
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          credentials_json: ${{ secrets.GOOGLE_CLOUD_KEYS }}
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Configure GKE cluster
         run: |
-          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-          docker build -t $DOCKERHUB_USERNAME/app_presente_front:production .
-          docker push $DOCKERHUB_USERNAME/app_presente_front:production
-          echo "Pushed $DOCKERHUB_USERNAME/app_presente_front:production"
-      - name: Debug EC2 Host
-        run: echo "EC2_HOST is $EC2_HOST"
-        env:
-          EC2_HOST: ${{ secrets.PRODUCTION_EC2_HOST }}
-      - name: Deploy to Production EC2
-        env:
-          EC2_HOST: ${{ secrets.PRODUCTION_EC2_HOST }}
-          EC2_SSH_KEY: ${{ secrets.PRODUCTION_EC2_SSH_KEY }}
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
+      - name: Deploy to production
         run: |
-          echo "$EC2_SSH_KEY" > ssh_key.pem
-          chmod 400 ssh_key.pem
-          ssh -i ssh_key.pem -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << EOF
-            # Pull the new image
-            docker pull $DOCKERHUB_USERNAME/app_presente_front:production
-
-            # Start the new container on a temporary port to test it
-            docker run -d --name app_presente_front_production_new -p 8080:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:production
-
-            # Wait for the container to start (account for HEALTHCHECK start-period)
-            sleep 10
-
-            # Wait and check if the new container is healthy
-            echo "Waiting for the new container to become healthy..."
-            for i in {1..20}
-            do
-              if docker inspect app_presente_front_production_new --format='{{.State.Health.Status}}' | grep -q "healthy"; then
-                echo "New container is healthy!"
-                break
-              fi
-              if [ \$i -eq 20 ]; then
-                echo "New container failed to become healthy!"
-                echo "Container logs:"
-                docker logs app_presente_front_production_new
-                docker stop app_presente_front_production_new
-                docker rm app_presente_front_production_new
-                exit 1
-              fi
-              sleep 3
-            done
-
-            # Stop and remove the old container
-            docker stop app_presente_front_production || true
-            docker rm app_presente_front_production || true
-
-            # Rename the new container and ensure it's stopped/removed before starting the final one
-            docker rename app_presente_front_production_new app_presente_front_production
-            docker stop app_presente_front_production || true
-            docker rm app_presente_front_production || true
-
-            # Start the final container on the correct port
-            docker run -d --name app_presente_front_production -p 80:3000 -e NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL $DOCKERHUB_USERNAME/app_presente_front:production
-
-            # Verify the final container is running
-            docker ps
-          EOF
+          kubectl -n production-app-presente apply -f production/frontend-deployment.yaml -f production/frontend-service.yaml
