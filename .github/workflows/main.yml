@@ -24,7 +24,6 @@ jobs:
         run: npm ci
       - name: Run linting
         run: npm run lint
-        continue-on-error: true
       - name: Run tests
         run: npm test
       - name: Archive test results
@@ -73,7 +72,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.24.0
         with:
           slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: 'your-channel-id'
+          channel-id: 'C12345678' # Replace with your channel ID
           text: "New release version built: ${{ github.sha }} for app_presente_front"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -97,6 +96,9 @@ jobs:
       - name: Deploy to stage
         run: |
           kubectl -n stage-app-presente apply -f frontend-deployment.yaml -f frontend-service.yaml
+      - name: Verify stage deployment
+        run: |
+          kubectl -n stage-app-presente rollout status deployment/app-presente-front --timeout=300s
 
   deploy-production:
     runs-on: ubuntu-latest
@@ -117,3 +119,6 @@ jobs:
       - name: Deploy to production
         run: |
           kubectl -n production-app-presente apply -f production/frontend-deployment.yaml -f production/frontend-service.yaml
+      - name: Verify production deployment
+        run: |
+          kubectl -n production-app-presente rollout status deployment/app-presente-front --timeout=300s
