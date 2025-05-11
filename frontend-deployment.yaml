@@ -6,7 +6,7 @@ metadata:
   labels:
     app: app-presente-front
 spec:
-  replicas: 2
+  replicas: 1  # Match Autopilot's adjustment
   selector:
     matchLabels:
       app: app-presente-front
@@ -34,20 +34,24 @@ spec:
           httpGet:
             path: /
             port: 3000
-          initialDelaySeconds: 15
+          initialDelaySeconds: 30
           periodSeconds: 10
-          failureThreshold: 3
+          failureThreshold: 6
         livenessProbe:
           httpGet:
             path: /
             port: 3000
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 20
-          failureThreshold: 3
+          failureThreshold: 6
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
         resources:
           limits:
-            cpu: "500m"
-            memory: "512Mi"
+            cpu: "200m"  # Further reduced
+            memory: "256Mi"  # Further reduced
           requests:
-            cpu: "200m"
-            memory: "256Mi"
+            cpu: "100m"
+            memory: "128Mi"
