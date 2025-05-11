@@ -6,7 +6,7 @@ metadata:
   labels:
     app: app-presente-front
 spec:
-  replicas: 1  # Match Autopilot's adjustment
+  replicas: 1
   selector:
     matchLabels:
       app: app-presente-front
@@ -50,8 +50,8 @@ spec:
               command: ["/bin/sh", "-c", "sleep 5"]
         resources:
           limits:
-            cpu: "200m"  # Further reduced
-            memory: "256Mi"  # Further reduced
-          requests:
             cpu: "100m"
             memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
