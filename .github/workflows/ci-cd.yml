@@ -101,7 +101,7 @@ jobs:
           kubectl version --client
       - name: Deploy to stage
         run: |
-          kubectl -n stage-app-presente apply -f kubernetes/frontend-deployment.yaml -f kubernetes/frontend-service.yaml
+          kubectl -n stage-app-presente apply -f frontend-deployment.yaml -f frontend-service.yaml
       - name: Verify stage deployment
         run: |
           kubectl -n stage-app-presente rollout status deployment/app-presente-front --timeout=300s
@@ -130,7 +130,7 @@ jobs:
           kubectl version --client
       - name: Deploy to production
         run: |
-          kubectl -n production-app-presente apply -f kubernetes/production/frontend-deployment.yaml -f kubernetes/production/frontend-service.yaml
+          kubectl -n production-app-presente apply -f production/frontend-deployment.yaml -f production/frontend-service.yaml
       - name: Verify production deployment
         run: |
           kubectl -n production-app-presente rollout status deployment/app-presente-front --timeout=300s
