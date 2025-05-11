@@ -1,0 +1,136 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    branches:
+      - release/*
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run linting
+        run: npm run lint
+      - name: Run tests
+        run: npm test
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/test-results/**
+            **/*.xml
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request' && startsWith(github.ref, 'refs/heads/release/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: npm run build
+      - name: Build and push Docker image
+        run: |
+          docker build -t guilherme310402/app_presente_front:latest .
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker push guilherme310402/app_presente_front:latest
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            .next/
+            out/
+      - name: Notify on release
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: 'YOUR_SLACK_CHANNEL_ID' # Replace with actual Slack channel ID
+          text: "New release version built: ${{ github.sha }} for app_presente_front"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+  deploy-stage:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CLOUD_KEYS }}'
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin --quiet || { echo "Plugin installation failed"; exit 1; }
+          gcloud components update --quiet
+          which gke-gcloud-auth-plugin || { echo "Plugin not found"; exit 1; }
+      - name: Verify GKE authentication
+        run: |
+          gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
+          kubectl version --client
+      - name: Deploy to stage
+        run: |
+          kubectl -n stage-app-presente apply -f kubernetes/frontend-deployment.yaml -f kubernetes/frontend-service.yaml
+      - name: Verify stage deployment
+        run: |
+          kubectl -n stage-app-presente rollout status deployment/app-presente-front --timeout=300s
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CLOUD_KEYS }}'
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin --quiet || { echo "Plugin installation failed"; exit 1; }
+          gcloud components update --quiet
+          which gke-gcloud-auth-plugin || { echo "Plugin not found"; exit 1; }
+      - name: Verify GKE authentication
+        run: |
+          gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
+          kubectl version --client
+      - name: Deploy to production
+        run: |
+          kubectl -n production-app-presente apply -f kubernetes/production/frontend-deployment.yaml -f kubernetes/production/frontend-service.yaml
+      - name: Verify production deployment
+        run: |
+          kubectl -n production-app-presente rollout status deployment/app-presente-front --timeout=300s
