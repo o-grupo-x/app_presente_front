@@ -72,7 +72,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.24.0
         with:
           slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: 'YOUR_SLACK_CHANNEL_ID' # Replace with actual Slack channel ID
+          channel-id: 'YOUR_SLACK_CHANNEL_ID'
           text: "New release version built: ${{ github.sha }} for app_presente_front"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
