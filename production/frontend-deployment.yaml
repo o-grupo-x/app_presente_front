@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app-presente-front
-  namespace: stage-app-presente
+  namespace: production-app-presente
   labels:
     app: app-presente-front
 spec:
@@ -15,26 +15,42 @@ spec:
       labels:
         app: app-presente-front
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
       - name: app-presente-front
         image: guilherme310402/app_presente_front:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 3000
         env:
-        - name: BACKEND_URL
-          value: "http://localhost:8000"
+        - name: NEXT_PUBLIC_API_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-presente-secrets
+              key: NEXT_PUBLIC_API_URL
+        - name: NEXT_PUBLIC_ENVIRONMENT_TEXT
+          value: "TESTE PRODUCAO"
         readinessProbe:
           httpGet:
             path: /
             port: 3000
-          initialDelaySeconds: 5
+          initialDelaySeconds: 30
           periodSeconds: 10
+          failureThreshold: 6
         livenessProbe:
           httpGet:
             path: /
             port: 3000
-          initialDelaySeconds: 15
-          periodSeconds: 10
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          failureThreshold: 6
+        lifecycle:
+          preStop:
+            exec:
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "sleep 5"
         resources:
           limits:
             cpu: "100m"
