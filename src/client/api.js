@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // const backend = "https://api.odeiojava.com.br";
-const backend = "/api";
+const backend = "https://api.odeiojava.com.br/api";
 
 const httpClient = axios.create({
   // baseURL: process.env.NEXT_PUBLIC_BACK
