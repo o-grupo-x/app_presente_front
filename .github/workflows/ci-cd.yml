@@ -119,7 +119,7 @@ jobs:
           gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
       - name: Deploy to stage
         run: |
-          kubectl -n stage-app-presente apply -f frontend-deployment.yaml -f frontend-service.yaml
+          kubectl -n stage-app-presente apply -f k8s/stage/frontend-deployment.yaml -f k8s/stage/frontend-service.yaml
           kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:latest
           kubectl patch deployment app-presente-front -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
           kubectl rollout restart deployment/app-presente-front -n stage-app-presente
@@ -167,7 +167,7 @@ jobs:
           gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
       - name: Deploy to production
         run: |
-          kubectl -n production-app-presente apply -f production/frontend-deployment.yaml -f production/frontend-service.yaml
+          kubectl -n production-app-presente apply -f k8s/production/frontend-deployment.yaml -f k8s/production/frontend-service.yaml
           kubectl set image deployment/app-presente-front -n production-app-presente app-presente-front=guilherme310402/app_presente_front:latest
           kubectl patch deployment app-presente-front -n production-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
           kubectl rollout restart deployment/app-presente-front -n production-app-presente
