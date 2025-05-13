@@ -55,7 +55,7 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build -t guilherme310402/app_presente_front:${GITHUB_SHA::7} .
+          docker build --no-cache -t guilherme310402/app_presente_front:${GITHUB_SHA::7} .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker push guilherme310402/app_presente_front:${GITHUB_SHA::7}
         env:
@@ -97,7 +97,7 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build -t guilherme310402/app_presente_front:latest .
+          docker build --no-cache -t guilherme310402/app_presente_front:latest .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker push guilherme310402/app_presente_front:latest
         env:
@@ -145,7 +145,7 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build -t guilherme310402/app_presente_front:latest .
+          docker build --no-cache -t guilherme310402/app_presente_front:latest .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker push guilherme310402/app_presente_front:latest
         env:
