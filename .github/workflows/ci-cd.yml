@@ -120,7 +120,7 @@ jobs:
       - name: Deploy to stage
         run: |
           kubectl -n stage-app-presente apply -f frontend-deployment.yaml -f frontend-service.yaml
-          kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:${GITHUB_SHA::7}
+          kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:latest
           kubectl patch deployment app-presente-front -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
           kubectl rollout restart deployment/app-presente-front -n stage-app-presente
           kubectl rollout status deployment/app-presente-front -n stage-app-presente --timeout=120s
