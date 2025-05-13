@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-presente-front-service
+  namespace: stage-app-presente
+spec:
+  selector:
+    app: app-presente-front
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+  type: LoadBalancer
