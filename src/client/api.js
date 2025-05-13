@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // const backend = "https://api.odeiojava.com.br";
-const backend = "";
+const backend = "https://api.odeiojava.com.br/api";
 
 const httpClient = axios.create({
   // baseURL: process.env.NEXT_PUBLIC_BACK
@@ -11,153 +11,153 @@ const httpClient = axios.create({
 
 const api = {
   aluno: {
-    findById: (id) => httpClient.get("/api/aluno", id),
+    findById: (id) => httpClient.get("/aluno", id),
     listAll: (jwt) =>
-      httpClient.get("/api/aluno/listAll", {
+      httpClient.get("/aluno/listAll", {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
-    create: (alunoData) => httpClient.post("/api/aluno", alunoData),
-    update: (id, alunoData) => httpClient.put("/api/aluno", id, alunoData),
-    delete: (id) => httpClient.delete("/api/aluno", id),
+    create: (alunoData) => httpClient.post("/aluno", alunoData),
+    update: (id, alunoData) => httpClient.put("/aluno", id, alunoData),
+    delete: (id) => httpClient.delete("/aluno", id),
     findChamadaByAluno: (id_aluno, jwt) =>
-      httpClient.get(`/api/aluno/HistoricoPresenca?id_aluno=` + id_aluno, {
+      httpClient.get(`/aluno/HistoricoPresenca?id_aluno=` + id_aluno, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     presencasFaltas: (id_aluno, jwt) =>
-      httpClient.get(`/api/aluno/PresencaFalta?id_aluno=` + id_aluno, {
+      httpClient.get(`/aluno/PresencaFalta?id_aluno=` + id_aluno, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     chamadasAbertas: (id_aluno, jwt) =>
-      httpClient.get(`/api/chamada/aluno?id=` + id_aluno, {
+      httpClient.get(`/chamada/aluno?id=` + id_aluno, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
-    presenca: (body) => httpClient.post("/api/presenca/ra", body),
+    presenca: (body) => httpClient.post("/presenca/ra", body),
     presencaAluno: (body, jwt) =>
-      httpClient.post("/api/presenca", body, {
+      httpClient.post("/presenca", body, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     presentesAusentes: (id_turma, jwt) =>
-      httpClient.get(`/api/aluno/AusentesPresentes?id_turma=` + id_turma, {
+      httpClient.get(`/aluno/AusentesPresentes?id_turma=` + id_turma, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     ativosInativos: (id_turma, jwt) =>
-      httpClient.get(`/api/aluno/AtivoInativo?id_turma=` + id_turma, {
+      httpClient.get(`/aluno/AtivoInativo?id_turma=` + id_turma, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     mediaAtivosInativos: (id_turma,jwt) =>
-      httpClient.get(`/api/aluno/mediaAtivo?id_turma=` + id_turma,{
+      httpClient.get(`/aluno/mediaAtivo?id_turma=` + id_turma,{
          headers: {
             Authorization: `Bearer ${jwt}`,
           },
       }),
     mediaPresentesAusentes: (id_turma, jwt) =>
-      httpClient.get(`/api/aluno/mediaAusente?id_turma=` + id_turma, {
+      httpClient.get(`/aluno/mediaAusente?id_turma=` + id_turma, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     statusAluno: (idAluno, jwt) =>
-      httpClient.get("/api/aluno/alunoStatus?id_aluno=" + idAluno, {
+      httpClient.get("/aluno/alunoStatus?id_aluno=" + idAluno, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
-    fetchLembretes: (cargo, idAluno,jwt) => httpClient.get(`/api/lembrete/findLembrete?cargo=${cargo}&id=${idAluno}`,{
+    fetchLembretes: (cargo, idAluno,jwt) => httpClient.get(`/lembrete/findLembrete?cargo=${cargo}&id=${idAluno}`,{
       headers: { 
          'Authorization': `Bearer ${jwt}`
      }
     }),
-    vizualizar: (idLembrete) => httpClient.put("/api/lembrete/visualizado?id=" + idLembrete),
+    vizualizar: (idLembrete) => httpClient.put("/lembrete/visualizado?id=" + idLembrete),
   },
   lembrete:{
-   listAll: (jwt) => httpClient.get('/api/lembrete/listAll',{
+   listAll: (jwt) => httpClient.get('/lembrete/listAll',{
       headers: { 
          'Authorization': `Bearer ${jwt}`
      }
    }),
-   FindById: (id,jwt) => httpClient.get('/api/lembrete?id='+ id,{
+   FindById: (id,jwt) => httpClient.get('/lembrete?id='+ id,{
     headers: { 
        'Authorization': `Bearer ${jwt}`
    }
  }),
   },
   admin: {
-    findByAusentes: (id_turma) => httpClient.get(`/api/aluno/AusentesPresentes?id_turma=` + id_turma),
-    lembrete: (payload, jwt) =>httpClient.post("/api/lembrete", payload, {
+    findByAusentes: (id_turma) => httpClient.get(`/aluno/AusentesPresentes?id_turma=` + id_turma),
+    lembrete: (payload, jwt) =>httpClient.post("/lembrete", payload, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
   },
   chamada: {
-    findById: (id) => httpClient.get("api/chamada", id),
+    findById: (id) => httpClient.get("/chamada", id),
     listAll: (jwt) =>
-      httpClient.get("/api/chamada/listAll", {
+      httpClient.get("/chamada/listAll", {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     create: (chamada,jwt) =>
-      httpClient.post("/api/chamada", chamada, {
+      httpClient.post("/chamada", chamada, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
-    update: (id, chamaData) => httpClient.put("/api/chamada", id, chamaData),
-    delete: (id) => httpClient.delete(`/api/chamada?id=${id}`, id),
+    update: (id, chamaData) => httpClient.put("/chamada", id, chamaData),
+    delete: (id) => httpClient.delete(`/chamada?id=${id}`, id),
     fecharChamada: (idChamada, jwt) =>
-    httpClient.put("/api/chamada/fecharChamada?id=" + idChamada, jwt, {
+    httpClient.put("/chamada/fecharChamada?id=" + idChamada, jwt, {
       headers: {
         Authorization: `Bearer ${jwt}`,
       },
    }),
     obterUltimaChamada: (idProfessor) =>
-      httpClient.get("/api/chamada/ultimaChamada?id=" + idProfessor),
+      httpClient.get("/chamada/ultimaChamada?id=" + idProfessor),
   },
   configuracao: {
-    findById: (id) => httpClient.get("api/configuracao", id),
-    listAll: () => httpClient.get("api/configuracao/listAll"),
+    findById: (id) => httpClient.get("/configuracao", id),
+    listAll: () => httpClient.get("/configuracao/listAll"),
     create: (configuracaoData) =>
-      httpClient.post("/api/configuracao", configuracaoData),
+      httpClient.post("/configuracao", configuracaoData),
     update: (id, configuracaoData) =>
-      httpClient.put("/api/configuracao/", id, configuracaoData),
-    delete: (id) => httpClient.delete("/api/configuracao/", id),
+      httpClient.put("/configuracao/", id, configuracaoData),
+    delete: (id) => httpClient.delete("/configuracao/", id),
   },
   presenca: {
-    findById: (id) => httpClient.get("api/presenca", id),
-    listAll: () => httpClient.get("api/presenca/listAll"),
-    create: (presencaData) => httpClient.post("/api/presenca", presencaData),
+    findById: (id) => httpClient.get("/presenca", id),
+    listAll: () => httpClient.get("/presenca/listAll"),
+    create: (presencaData) => httpClient.post("/presenca", presencaData),
     update: (id, presencaData) =>
-      httpClient.put("/api/presenca", id, presencaData),
-    delete: (id) => httpClient.delete("/api/presenca", id),
-    findByPresentes: () => httpClient.get("api/presenca/findByPresentes"),
+      httpClient.put("/presenca", id, presencaData),
+    delete: (id) => httpClient.delete("/presenca", id),
+    findByPresentes: () => httpClient.get("/presenca/findByPresentes"),
   },
   professor: {
-    findById: (id) => httpClient.get("api/professor", id),
+    findById: (id) => httpClient.get("/professor", id),
     listAll: (jwt) =>
-      httpClient.get("api/professor/listAll", {
+      httpClient.get("/professor/listAll", {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
-    create: (professorData) => httpClient.post("/api/professor", professorData),
+    create: (professorData) => httpClient.post("/professor", professorData),
     update: (id, professorData) =>
-      httpClient.put("/api/professor", id, professorData),
-    delete: (id) => httpClient.delete("/api/professor", id),
+      httpClient.put("/professor", id, professorData),
+    delete: (id) => httpClient.delete("/professor", id),
     frequencia: (idProfessor, idChamada, jwt) =>
       httpClient.get(
         `api/professor/numAlunos?id_professor=${idProfessor}&id_chamada=${idChamada}`,
@@ -168,68 +168,68 @@ const api = {
         }
       ),
     historicoSemanal: (idProfessor, jwt) =>
-      httpClient.get("/api/professor/historicoSemanal?id=" + idProfessor, {
+      httpClient.get("/professor/historicoSemanal?id=" + idProfessor, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     mediaSemanal: (media, jwt) =>
-      httpClient.get("/api/professor/mediaSemanal?id=" + media, {
+      httpClient.get("/professor/mediaSemanal?id=" + media, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     turmas: (idProfessor, jwt) =>
-      httpClient.get("/api/professor/listarTurmas?id=" + idProfessor, {
+      httpClient.get("/professor/listarTurmas?id=" + idProfessor, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     chamadasAbertas: (idProfessor, jwt) =>
-      httpClient.get("/api/chamada/listAllprofessor?id=" + idProfessor, {
+      httpClient.get("/chamada/listAllprofessor?id=" + idProfessor, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     presenca: (body, jwt) =>
-      httpClient.post("/api/presenca/ra", body, {
+      httpClient.post("/presenca/ra", body, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
   },
   projeto: {
-    findById: (id) => httpClient.get("api/projeto", id),
-    listAll: () => httpClient.get("api/projeto/listAll"),
-    create: (projetoData) => httpClient.post("/api/projeto", projetoData),
+    findById: (id) => httpClient.get("/projeto", id),
+    listAll: () => httpClient.get("/projeto/listAll"),
+    create: (projetoData) => httpClient.post("/projeto", projetoData),
     update: (id, projetoData) =>
-      httpClient.put("/api/projeto", id, projetoData),
-    delete: (id) => httpClient.delete("/api/projeto", id),
+      httpClient.put("/projeto", id, projetoData),
+    delete: (id) => httpClient.delete("/projeto", id),
   },
   turma: {
-    findById: (id) => httpClient.get("api/turma", id),
+    findById: (id) => httpClient.get("/turma", id),
     listAll: (jwt) =>
-      httpClient.get("api/turma/listAll", {
+      httpClient.get("/turma/listAll", {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     create: (turmaData, jwt) =>
-      httpClient.post("/api/turma", turmaData, {
+      httpClient.post("/turma", turmaData, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
-    update: (id, turmaData) => httpClient.put("/api/turma", id, turmaData),
-    delete: (id) => httpClient.delete("/api/turma", id),
+    update: (id, turmaData) => httpClient.put("/turma", id, turmaData),
+    delete: (id) => httpClient.delete("/turma", id),
     professorNaTurma: (payload,jwt) =>
-      httpClient.post("/api/turma/cadastrarProfessor", payload,{
+      httpClient.post("/turma/cadastrarProfessor", payload,{
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     alunoNaTurma: (payload, jwt) =>
-      httpClient.post("/api/turma/cadastrarAluno",payload, {
+      httpClient.post("/turma/cadastrarAluno",payload, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
@@ -237,13 +237,13 @@ const api = {
   },
   materia: {
     create: (payload, jwt) =>
-      httpClient.post("/api/materia", payload, {  
+      httpClient.post("/materia", payload, {  
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
     listAll: (jwt) =>
-      httpClient.get("/api/materia/listAll", {
+      httpClient.get("/materia/listAll", {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
@@ -251,17 +251,17 @@ const api = {
   },
   usuario: {
     create: (payload, jwt) =>
-      httpClient.post("api/usuario", payload, {
+      httpClient.post("/usuario", payload, {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
       }),
-    login: (payload) => httpClient.post("/api/login", payload , {
+    login: (payload) => httpClient.post("/login", payload , {
     }),
     sendLog: (message, level, config) => {
-      return httpClient.post("/api/log", { message, level }, config);
+      return httpClient.post("/log", { message, level }, config);
     },
-    logout: (jwt) => httpClient.post("/api/logout", {}, {
+    logout: (jwt) => httpClient.post("/logout", {}, {
       headers: {
         Authorization: `Bearer ${jwt}`,
       },
