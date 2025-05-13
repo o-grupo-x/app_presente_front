@@ -1,65 +1,174 @@
-name: CI/CD Frontend com SHA + Token GCP
+name: Frontend CI/CD
 
 on:
   push:
     branches:
       - dev
+      - main
+  pull_request:
+    branches:
+      - release/*
 
 jobs:
-  build-and-deploy:
+  test:
     runs-on: ubuntu-latest
-
-    env:
-      IMAGE_NAME: guilherme310402/app_presente_front
-
     steps:
-      - name: Checkout do código
+      - name: Checkout code
         uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run linting
+        run: npm run lint
+      - name: Run tests
+        run: npm test
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/test-results/**
+            **/*.xml
 
-      - name: Definir SHA
-        id: vars
-        run: echo "SHORT_SHA=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Login no Docker Hub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-
-      - name: Build e Push da imagem com SHA
-        run: |
-          docker build -t $IMAGE_NAME:${{ steps.vars.outputs.SHORT_SHA }} .
-          docker push $IMAGE_NAME:${{ steps.vars.outputs.SHORT_SHA }}
-
-      - name: Instalar kubectl
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y kubectl
-
-      - name: Configurar kubectl com token
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request' && startsWith(github.ref, 'refs/heads/release/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build frontend
         env:
-          GKE_ENDPOINT: ${{ secrets.GKE_ENDPOINT }}
-          GCP_ACCESS_TOKEN: ${{ secrets.GCP_ACCESS_TOKEN }}
-          GKE_CA_BASE64: ${{ secrets.GKE_CA_BASE64 }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: npm run build
+      - name: Build and push Docker image
         run: |
-          mkdir -p ~/.kube
-          echo "$GKE_CA_BASE64" | base64 -d > $HOME/.kube/ca.crt
+          docker build -t guilherme310402/app_presente_front:latest .
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker push guilherme310402/app_presente_front:latest
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            .next/
+            out/
+      - name: Notify on release
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: 'YOUR_SLACK_CHANNEL_ID' # Replace with actual Slack channel ID
+          text: "New release version built: ${{ github.sha }} for app_presente_front"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
-          kubectl config set-cluster gke-cluster \
-            --server=$GKE_ENDPOINT \
-            --certificate-authority=$HOME/.kube/ca.crt
-
-          kubectl config set-credentials gke-user \
-            --token=$GCP_ACCESS_TOKEN
-
-          kubectl config set-context gke-context \
-            --cluster=gke-cluster \
-            --user=gke-user \
-            --namespace=stage-app-presente
-
-          kubectl config use-context gke-context
-
-      - name: Deploy para o GKE com imagem versionada
+  deploy-stage:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: npm run build
+      - name: Build and push Docker image
+        run: |
+          docker build -t guilherme310402/app_presente_front:latest .
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker push guilherme310402/app_presente_front:latest
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CLOUD_KEYS }}'
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin --quiet || { echo "Plugin installation failed"; exit 1; }
+          gcloud components update --quiet
+          which gke-gcloud-auth-plugin || { echo "Plugin not found"; exit 1; }
+      - name: Configure kubectl
+        run: |
+          gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
+      - name: Deploy to stage
         run: |
           kubectl -n stage-app-presente apply -f frontend-deployment.yaml -f frontend-service.yaml
-          kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=$IMAGE_NAME:${{ steps.vars.outputs.SHORT_SHA }}
+          kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:latest
           kubectl patch deployment app-presente-front -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
           kubectl rollout restart deployment/app-presente-front -n stage-app-presente
           kubectl rollout status deployment/app-presente-front -n stage-app-presente --timeout=120s
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: npm run build
+      - name: Build and push Docker image
+        run: |
+          docker build -t guilherme310402/app_presente_front:latest .
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker push guilherme310402/app_presente_front:latest
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CLOUD_KEYS }}'
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin --quiet || { echo "Plugin installation failed"; exit 1; }
+          gcloud components update --quiet
+          which gke-gcloud-auth-plugin || { echo "Plugin not found"; exit 1; }
+      - name: Configure kubectl
+        run: |
+          gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
+      - name: Deploy to production
+        run: |
+          kubectl -n production-app-presente apply -f production/frontend-deployment.yaml -f production/frontend-service.yaml
+          kubectl set image deployment/app-presente-front -n production-app-presente app-presente-front=guilherme310402/app_presente_front:latest
+          kubectl patch deployment app-presente-front -n production-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
+          kubectl rollout restart deployment/app-presente-front -n production-app-presente
+          kubectl rollout status deployment/app-presente-front -n production-app-presente --timeout=120s
