@@ -8,6 +8,8 @@ RUN npm run build
 
 # Stage 2: Runtime
 FROM node:18-alpine
+ARG build_time
+LABEL build_time=$build_time
 WORKDIR /app
 RUN apk add --no-cache tini
 COPY --from=builder /app/.next ./.next
