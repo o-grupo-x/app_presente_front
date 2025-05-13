@@ -55,9 +55,9 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build -t guilherme310402/app_presente_front:latest .
+          docker build -t guilherme310402/app_presente_front:${GITHUB_SHA::7} .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push guilherme310402/app_presente_front:latest
+          docker push guilherme310402/app_presente_front:${GITHUB_SHA::7}
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -120,7 +120,7 @@ jobs:
       - name: Deploy to stage
         run: |
           kubectl -n stage-app-presente apply -f frontend-deployment.yaml -f frontend-service.yaml
-          kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:latest
+          kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:${GITHUB_SHA::7}
           kubectl patch deployment app-presente-front -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
           kubectl rollout restart deployment/app-presente-front -n stage-app-presente
           kubectl rollout status deployment/app-presente-front -n stage-app-presente --timeout=120s
