@@ -62,9 +62,9 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build --no-cache -t ${{ env.DOCKER_IMAGE }}:${{ github.sha }} .
+          docker build --no-cache -t ${{ env.DOCKER_IMAGE }}:${GITHUB_SHA::7} .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.DOCKER_IMAGE }}:${GITHUB_SHA::7}
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -79,7 +79,7 @@ jobs:
         uses: slackapi/slack-github-action@v1.24.0
         with:
           slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          channel-id: 'YOUR_SLACK_CHANNEL_ID' # Replace with actual Slack channel ID
           text: "New release version built: ${{ github.sha }} for app_presente_front"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -104,9 +104,9 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build --no-cache -t ${{ env.DOCKER_IMAGE }}:stage-${{ github.sha }} .
+          docker build --no-cache -t ${{ env.DOCKER_IMAGE }}:stage-${GITHUB_SHA::7} .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push ${{ env.DOCKER_IMAGE }}:stage-${{ github.sha }}
+          docker push ${{ env.DOCKER_IMAGE }}:stage-${GITHUB_SHA::7}
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -118,17 +118,23 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
       - name: Install gke-gcloud-auth-plugin
         run: |
-          gcloud components install gke-gcloud-auth-plugin --quiet
+          gcloud components install gke-gcloud-auth-plugin --quiet || { echo "Plugin installation failed"; exit 1; }
           gcloud components update --quiet
+          which gke-gcloud-auth-plugin || { echo "Plugin not found"; exit 1; }
       - name: Configure kubectl
         run: |
           gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} --region ${{ env.REGION }} --project ${{ env.PROJECT_ID }}
       - name: Deploy to stage
         run: |
           kubectl -n stage-app-presente apply -f k8s/stage/frontend-deployment.yaml -f k8s/stage/frontend-service.yaml
-          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} -n stage-app-presente ${{ env.DEPLOYMENT_NAME }}=${{ env.DOCKER_IMAGE }}:stage-${{ github.sha }}
-          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n stage-app-presente --timeout=300s
+          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} -n stage-app-presente ${{ env.DEPLOYMENT_NAME }}=${{ env.DOCKER_IMAGE }}:stage-${GITHUB_SHA::7}
           kubectl patch deployment ${{ env.DEPLOYMENT_NAME }} -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
+          kubectl rollout restart deployment/${{ env.DEPLOYMENT_NAME }} -n stage-app-presente
+          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n stage-app-presente --timeout=300s
+      - name: Verify deployment health
+        if: always()
+        run: |
+          kubectl get pods -n stage-app-presente -l app=${{ env.DEPLOYMENT_NAME }}
 
   deploy-production:
     runs-on: ubuntu-latest
@@ -150,9 +156,9 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build --no-cache -t ${{ env.DOCKER_IMAGE }}:prod-${{ github.sha }} .
+          docker build --no-cache -t ${{ env.DOCKER_IMAGE }}:prod-${GITHUB_SHA::7} .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push ${{ env.DOCKER_IMAGE }}:prod-${{ github.sha }}
+          docker push ${{ env.DOCKER_IMAGE }}:prod-${GITHUB_SHA::7}
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -164,20 +170,31 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
       - name: Install gke-gcloud-auth-plugin
         run: |
-          gcloud components install gke-gcloud-auth-plugin --quiet
+          gcloud components install gke-gcloud-auth-plugin --quiet || { echo "Plugin installation failed"; exit 1; }
           gcloud components update --quiet
+          which gke-gcloud-auth-plugin || { echo "Plugin not found"; exit 1; }
       - name: Configure kubectl
         run: |
           gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} --region ${{ env.REGION }} --project ${{ env.PROJECT_ID }}
       - name: Deploy to production
         run: |
           kubectl -n production-app-presente apply -f k8s/production/frontend-deployment.yaml -f k8s/production/frontend-service.yaml
-          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} -n production-app-presente ${{ env.DEPLOYMENT_NAME }}=${{ env.DOCKER_IMAGE }}:prod-${{ github.sha }}
+          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} -n production-app-presente ${{ env.DEPLOYMENT_NAME }}=${{ env.DOCKER_IMAGE }}:prod-${GITHUB_SHA::7}
+          kubectl patch deployment ${{ env.DEPLOYMENT_NAME }} -n production-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
+          kubectl rollout restart deployment/${{ env.DEPLOYMENT_NAME }} -n production-app-presente
           kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n production-app-presente --timeout=300s
       - name: Verify deployment health
+        if: always()
         run: |
           kubectl get pods -n production-app-presente -l app=${{ env.DEPLOYMENT_NAME }}
       - name: Rollback on failure
         if: failure()
         run: |
           kubectl rollout undo deployment/${{ env.DEPLOYMENT_NAME }} -n production-app-presente
+      - name: Debug on failure
+        if: failure()
+        run: |
+          echo "Checking pod events..."
+          kubectl describe pod -n production-app-presente -l app=${{ env.DEPLOYMENT_NAME }} > debug-output.txt
+          kubectl logs -n production-app-presente -l app=${{ env.DEPLOYMENT_NAME }} --all-containers --previous >> debug-output.txt
+          cat debug-output.txt
