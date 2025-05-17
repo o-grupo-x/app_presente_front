@@ -6,7 +6,7 @@ metadata:
   labels:
     app: app-presente-front
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: app-presente-front
