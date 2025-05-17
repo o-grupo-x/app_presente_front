@@ -9,13 +9,6 @@ on:
     branches:
       - release/*
 
-env:
-  DOCKER_IMAGE: guilherme310402/app_presente_front
-  DEPLOYMENT_NAME: app-presente-front
-  PROJECT_ID: app-chamada-5706
-  CLUSTER_NAME: devops-cluster
-  REGION: us-central1
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -41,7 +34,6 @@ jobs:
           path: |
             **/test-results/**
             **/*.xml
-
   build:
     runs-on: ubuntu-latest
     needs: test
@@ -62,9 +54,9 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build --no-cache -t ${{ env.DOCKER_IMAGE }}:${GITHUB_SHA::7} .
+          docker build --no-cache -t guilherme310402/app_presente_front:${GITHUB_SHA::7} .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push ${{ env.DOCKER_IMAGE }}:${GITHUB_SHA::7}
+          docker push guilherme310402/app_presente_front:${GITHUB_SHA::7}
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -104,9 +96,9 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build --no-cache -t ${{ env.DOCKER_IMAGE }}:stage-${GITHUB_SHA::7} .
+          docker build --no-cache -t guilherme310402/app_presente_front:latest .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push ${{ env.DOCKER_IMAGE }}:stage-${GITHUB_SHA::7}
+          docker push guilherme310402/app_presente_front:latest
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -123,19 +115,14 @@ jobs:
           which gke-gcloud-auth-plugin || { echo "Plugin not found"; exit 1; }
       - name: Configure kubectl
         run: |
-          gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} --region ${{ env.REGION }} --project ${{ env.PROJECT_ID }}
+          gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
       - name: Deploy to stage
         run: |
           kubectl -n stage-app-presente apply -f k8s/stage/frontend-deployment.yaml -f k8s/stage/frontend-service.yaml
-          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} -n stage-app-presente ${{ env.DEPLOYMENT_NAME }}=${{ env.DOCKER_IMAGE }}:stage-${GITHUB_SHA::7}
-          kubectl patch deployment ${{ env.DEPLOYMENT_NAME }} -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
-          kubectl rollout restart deployment/${{ env.DEPLOYMENT_NAME }} -n stage-app-presente
-          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n stage-app-presente --timeout=300s
-      - name: Verify deployment health
-        if: always()
-        run: |
-          kubectl get pods -n stage-app-presente -l app=${{ env.DEPLOYMENT_NAME }}
-
+          kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:latest
+          kubectl patch deployment app-presente-front -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
+          kubectl rollout restart deployment/app-presente-front -n stage-app-presente
+          kubectl rollout status deployment/app-presente-front -n stage-app-presente --timeout=120s
   deploy-production:
     runs-on: ubuntu-latest
     needs: test
@@ -156,9 +143,9 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build --no-cache -t ${{ env.DOCKER_IMAGE }}:prod-${GITHUB_SHA::7} .
+          docker build --no-cache -t guilherme310402/app_presente_front:latest .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push ${{ env.DOCKER_IMAGE }}:prod-${GITHUB_SHA::7}
+          docker push guilherme310402/app_presente_front:latest
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -175,26 +162,11 @@ jobs:
           which gke-gcloud-auth-plugin || { echo "Plugin not found"; exit 1; }
       - name: Configure kubectl
         run: |
-          gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} --region ${{ env.REGION }} --project ${{ env.PROJECT_ID }}
+          gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
       - name: Deploy to production
         run: |
           kubectl -n production-app-presente apply -f k8s/production/frontend-deployment.yaml -f k8s/production/frontend-service.yaml
-          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} -n production-app-presente ${{ env.DEPLOYMENT_NAME }}=${{ env.DOCKER_IMAGE }}:prod-${GITHUB_SHA::7}
-          kubectl patch deployment ${{ env.DEPLOYMENT_NAME }} -n production-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
-          kubectl rollout restart deployment/${{ env.DEPLOYMENT_NAME }} -n production-app-presente
-          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n production-app-presente --timeout=300s
-      - name: Verify deployment health
-        if: always()
-        run: |
-          kubectl get pods -n production-app-presente -l app=${{ env.DEPLOYMENT_NAME }}
-      - name: Rollback on failure
-        if: failure()
-        run: |
-          kubectl rollout undo deployment/${{ env.DEPLOYMENT_NAME }} -n production-app-presente
-      - name: Debug on failure
-        if: failure()
-        run: |
-          echo "Checking pod events..."
-          kubectl describe pod -n production-app-presente -l app=${{ env.DEPLOYMENT_NAME }} > debug-output.txt
-          kubectl logs -n production-app-presente -l app=${{ env.DEPLOYMENT_NAME }} --all-containers --previous >> debug-output.txt
-          cat debug-output.txt
+          kubectl set image deployment/app-presente-front -n production-app-presente app-presente-front=guilherme310402/app_presente_front:latest
+          kubectl patch deployment app-presente-front -n production-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
+          kubectl rollout restart deployment/app-presente-front -n production-app-presente
+          kubectl rollout status deployment/app-presente-front -n production-app-presente --timeout=120s
