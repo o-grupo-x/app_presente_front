@@ -49,14 +49,14 @@ export default function SignIn() {
       <div className={styles.card}>
         <div className={styles.avatar_center}>
           <Image src={logo} className={styles.avatar} alt="Logo do APP PRESENTE" />
-          <h1 className={styles.title}>Bem Vindo ao Production</h1>
+          <h1 className={styles.title}>Bem Vindo</h1>
         </div>
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.inputGroup}>
             <label className={styles.label}>Login:</label>
             <input
               className={styles.input}
-              placeholder="Login teste"
+              placeholder="Login"
               value={login}
               onChange={(e) => setLogin(e.target.value)}
             />
