@@ -23,7 +23,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
       - name: app-presente-front
-        image: guilherme310402/app_presente_front:prod-${{ github.sha }}
+        image: guilherme310402/app_presente_front:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
