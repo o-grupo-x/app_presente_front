@@ -267,6 +267,15 @@ const api = {
       },
     }),
   },
+  health: () =>
+    httpClient.get("/health").then((response) => {
+      if (response.status === 200) {
+        return { status: "healthy" };
+      }
+      throw new Error("Backend unhealthy");
+    }).catch((error) => {
+      throw new Error(`Health check failed: ${error.message}`);
+    }),
 };
 
 export default api;
