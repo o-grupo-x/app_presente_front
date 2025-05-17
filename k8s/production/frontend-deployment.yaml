@@ -6,7 +6,7 @@ metadata:
   labels:
     app: app-presente-front
 spec:
-  replicas: 2 
+  replicas: 1
   selector:
     matchLabels:
       app: app-presente-front
@@ -25,7 +25,7 @@ spec:
         kubernetes.io/arch: amd64 
       containers:
       - name: app-presente-front
-        image: guilherme310402/app_presente_front:prod-placeholder
+        image: guilherme310402/app_presente_front:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
