@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: app-presente-front-service
-  namespace: stage-app-presente
+  name: app-presente-front
+  namespace: ${NAMESPACE}
 spec:
   selector:
     app: app-presente-front
@@ -10,4 +10,4 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 3000
-  type: LoadBalancer
+  type: ClusterIP
