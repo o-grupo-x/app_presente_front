@@ -34,7 +34,6 @@ jobs:
           path: |
             **/test-results/**
             **/*.xml
-
   build:
     runs-on: ubuntu-latest
     needs: test
@@ -114,9 +113,9 @@ jobs:
           gcloud components install gke-gcloud-auth-plugin --quiet || { echo "Plugin installation failed"; exit 1; }
           gcloud components update --quiet
           which gke-gcloud-auth-plugin || { echo "Plugin not found"; exit 1; }
-      - name: Configure kubectl
+      - name: Configure kubectl for stage cluster
         run: |
-          gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
+          gcloud container clusters get-credentials stage-app-presente --region us-east1 --project app-chamada-5706
       - name: Deploy to stage
         run: |
           kubectl -n stage-app-presente apply -f k8s/stage/frontend-deployment.yaml -f k8s/stage/frontend-service.yaml
@@ -124,7 +123,6 @@ jobs:
           kubectl patch deployment app-presente-front -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
           kubectl rollout restart deployment/app-presente-front -n stage-app-presente
           kubectl rollout status deployment/app-presente-front -n stage-app-presente --timeout=120s
-
   deploy-production:
     runs-on: ubuntu-latest
     needs: test

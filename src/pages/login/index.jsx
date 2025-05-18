@@ -56,7 +56,7 @@ export default function SignIn() {
             <label className={styles.label}>Login:</label>
             <input
               className={styles.input}
-              placeholder="Login teste"
+              placeholder="Login"
               value={login}
               onChange={(e) => setLogin(e.target.value)}
             />
