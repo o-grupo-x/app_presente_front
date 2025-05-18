@@ -10,19 +10,12 @@ spec:
   selector:
     matchLabels:
       app: app-presente-front
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1 
-      maxUnavailable: 0 
   template:
     metadata:
       labels:
         app: app-presente-front
     spec:
       terminationGracePeriodSeconds: 30
-      nodeSelector:
-        kubernetes.io/arch: amd64 
       containers:
       - name: app-presente-front
         image: guilherme310402/app_presente_front:latest
@@ -36,35 +29,31 @@ spec:
               name: app-presente-secrets
               key: NEXT_PUBLIC_API_URL
         - name: NEXT_PUBLIC_ENVIRONMENT_TEXT
-          value: "PRODUCTION"
-        resources:
-          limits:
-            cpu: "50m"
-            memory: "64Mi"
-            ephemeral-storage: "250Mi"
-          requests:
-            cpu: "25m"
-            memory: "32Mi"
-            ephemeral-storage: "100Mi"
+          value: "TESTE STAGE"
         readinessProbe:
           httpGet:
-            path: /api/health
+            path: /
             port: 3000
-          initialDelaySeconds: 10
+          initialDelaySeconds: 30
           periodSeconds: 10
-          timeoutSeconds: 3
-          successThreshold: 1
-          failureThreshold: 3
+          failureThreshold: 6
         livenessProbe:
           httpGet:
-            path: /api/health
+            path: /
             port: 3000
-          initialDelaySeconds: 15
+          initialDelaySeconds: 60
           periodSeconds: 20
-          timeoutSeconds: 3
-          successThreshold: 1
-          failureThreshold: 3
+          failureThreshold: 6
         lifecycle:
           preStop:
             exec:
               command: ["/bin/sh", "-c", "sleep 5"]
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+            ephemeral-storage: "500Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+            ephemeral-storage: "250Mi"
