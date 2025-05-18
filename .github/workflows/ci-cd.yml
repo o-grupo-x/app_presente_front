@@ -118,6 +118,16 @@ jobs:
           gcloud container clusters get-credentials stage-app-presente --region us-east1 --project app-chamada-5706
       - name: Deploy to stage
         run: |
+          # Check if files exist
+          if [ ! -f "k8s/stage/frontend-deployment.yaml" ]; then
+            echo "Error: k8s/stage/frontend-deployment.yaml not found"
+            exit 1
+          fi
+          if [ ! -f "k8s/stage/frontend-service.yaml" ]; then
+            echo "Error: k8s/stage/frontend-service.yaml not found"
+            exit 1
+          fi
+
           kubectl -n stage-app-presente apply -f k8s/stage/frontend-deployment.yaml -f k8s/stage/frontend-service.yaml
           kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:latest
           kubectl patch deployment app-presente-front -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
