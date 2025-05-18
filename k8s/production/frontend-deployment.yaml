@@ -48,6 +48,7 @@ spec:
           preStop:
             exec:
               command: ["/bin/sh", "-c", "sleep 5"]
+<<<<<<< HEAD
         resources:
           limits:
             cpu: "100m"
@@ -57,3 +58,5 @@ spec:
             cpu: "50m"
             memory: "64Mi"
             ephemeral-storage: "250Mi"
+=======
+>>>>>>> 4db2dfa8d618e4a36b0bf74ddfd438a148850d8f
