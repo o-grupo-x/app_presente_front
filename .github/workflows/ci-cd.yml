@@ -66,7 +66,7 @@ jobs:
       - name: Build and push Docker image
         run: |
           COMMIT_SHA=${{ github.sha }}
-          docker build --no-cache -t guilherme310402/app_presente_front:$COMMIT_SHA .
+          docker build --no-cache -t guilherme310402/app_presente_front:latest
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker push guilherme310402/app_presente_front:$COMMIT_SHA
         env:
