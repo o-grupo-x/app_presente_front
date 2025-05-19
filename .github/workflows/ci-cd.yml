@@ -136,8 +136,35 @@ jobs:
           kubectl patch deployment/app-presente-front -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
           kubectl rollout restart deployment/app-presente-front -n stage-app-presente
 
-          # Debug: Check pod status
-          echo "Checking pod status..."
+          # Debug: Check pod status before rollout
+          echo "Checking pod status before rollout..."
+          kubectl get pods -n stage-app-presente
+
+          # Debug: Describe pods in Terminating state (if any)
+          echo "Describing pods in Terminating state (if any)..."
+          TERMINATING_PODS=$(kubectl get pods -n stage-app-presente --field-selector=status.phase!=Running -o name | grep app-presente-front || true)
+          if [ ! -z "$TERMINATING_PODS" ]; then
+            for pod in $TERMINATING_PODS; do
+              echo "Describing $pod..."
+              kubectl describe $pod -n stage-app-presente
+            done
+          else
+            echo "No pods in Terminating state found."
+          fi
+
+          # Force delete stuck pods if they don't terminate within 60 seconds
+          echo "Waiting 60 seconds for pods to terminate..."
+          sleep 60
+          TERMINATING_PODS=$(kubectl get pods -n stage-app-presente --field-selector=status.phase!=Running -o name | grep app-presente-front || true)
+          if [ ! -z "$TERMINATING_PODS" ]; then
+            echo "Force deleting stuck pods..."
+            for pod in $TERMINATING_PODS; do
+              kubectl delete $pod -n stage-app-presente --force --grace-period=0
+            done
+          fi
+
+          # Debug: Check pod status after attempting to resolve termination
+          echo "Checking pod status after termination handling..."
           kubectl get pods -n stage-app-presente
 
           # Debug: Describe the deployment
@@ -146,7 +173,7 @@ jobs:
 
           # Wait for rollout with increased timeout
           echo "Waiting for rollout to complete..."
-          kubectl rollout status deployment/app-presente-front -n stage-app-presente --timeout=300s
+          kubectl rollout status deployment/app-presente-front -n stage-app-presente --timeout=600s
 
   deploy-production:
     runs-on: ubuntu-latest
@@ -195,8 +222,35 @@ jobs:
           kubectl patch deployment/app-presente-front -n production-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
           kubectl rollout restart deployment/app-presente-front -n production-app-presente
 
-          # Debug: Check pod status
-          echo "Checking pod status..."
+          # Debug: Check pod status before rollout
+          echo "Checking pod status before rollout..."
+          kubectl get pods -n production-app-presente
+
+          # Debug: Describe pods in Terminating state (if any)
+          echo "Describing pods in Terminating state (if any)..."
+          TERMINATING_PODS=$(kubectl get pods -n production-app-presente --field-selector=status.phase!=Running -o name | grep app-presente-front || true)
+          if [ ! -z "$TERMINATING_PODS" ]; then
+            for pod in $TERMINATING_PODS; do
+              echo "Describing $pod..."
+              kubectl describe $pod -n production-app-presente
+            done
+          else
+            echo "No pods in Terminating state found."
+          fi
+
+          # Force delete stuck pods if they don't terminate within 60 seconds
+          echo "Waiting 60 seconds for pods to terminate..."
+          sleep 60
+          TERMINATING_PODS=$(kubectl get pods -n production-app-presente --field-selector=status.phase!=Running -o name | grep app-presente-front || true)
+          if [ ! -z "$TERMINATING_PODS" ]; then
+            echo "Force deleting stuck pods..."
+            for pod in $TERMINATING_PODS; do
+              kubectl delete $pod -n production-app-presente --force --grace-period=0
+            done
+          fi
+
+          # Debug: Check pod status after attempting to resolve termination
+          echo "Checking pod status after termination handling..."
           kubectl get pods -n production-app-presente
 
           # Debug: Describe the deployment
@@ -205,7 +259,7 @@ jobs:
 
           # Wait for rollout with increased timeout
           echo "Waiting for rollout to complete..."
-          kubectl rollout status deployment/app-presente-front -n production-app-presente --timeout=300s
+          kubectl rollout status deployment/app-presente-front -n production-app-presente --timeout=600s
 
   release-notification:
     if: startsWith(github.ref, 'refs/heads/release/')
