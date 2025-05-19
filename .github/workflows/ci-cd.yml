@@ -1,4 +1,4 @@
-name: Frontend CI/CD
+name: Frontend CI/CD - GCP Kubernetes
 
 on:
   push:
@@ -12,22 +12,37 @@ on:
       - dev
   workflow_dispatch:
 
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GAR_LOCATION: us-central1
+  CLUSTER_NAME: ${{ secrets.GKE_CLUSTER_NAME }}
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}
+  DEPLOYMENT_NAME: app-presente-front
+  DOCKER_IMAGE: guilherme310402/app_presente_front
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
+
       - name: Install dependencies
+        working-directory: ./
         run: npm ci
+
       - name: Run linting
+        working-directory: ./
         run: npm run lint
+
       - name: Run tests
+        working-directory: ./
         run: npm test
       - name: Archive test results
         if: always()
@@ -39,28 +54,36 @@ jobs:
             **/*.xml
 
   build:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
+
       - name: Install dependencies
+        working-directory: ./
         run: npm ci
-      - name: Build frontend
-        env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-        run: npm run build
+
       - name: Build and push Docker image
         run: |
           COMMIT_SHA=${{ github.sha }}
-          docker build --no-cache -t guilherme310402/app_presente_front:$COMMIT_SHA .
+          docker build --no-cache \
+            -t guilherme310402/app_presente_front:$COMMIT_SHA \
+            -t guilherme310402/app_presente_front:latest .
+          COMMIT_SHA=${{ github.sha }}
+          docker build --no-cache \
+            -t guilherme310402/app_presente_front:$COMMIT_SHA \
+            -t guilherme310402/app_presente_front:latest .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker push guilherme310402/app_presente_front:$COMMIT_SHA
           docker push guilherme310402/app_presente_front:$COMMIT_SHA
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -80,8 +103,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -97,34 +118,54 @@ jobs:
           docker build --no-cache -t guilherme310402/app_presente_front:$COMMIT_SHA .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker push guilherme310402/app_presente_front:$COMMIT_SHA
+          docker push guilherme310402/app_presente_front:latest
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GOOGLE_CLOUD_KEYS }}'
-      - name: Set up Google Cloud SDK
+          credentials_json: ${{ secrets.GOOGLE_CLOUD_KEYS }}
+          project_id: app-chamada-5706
+
+      - name: Set up Cloud SDK and kubectl
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: app-chamada-5706
+          install_components: 'kubectl'
+
       - name: Install gke-gcloud-auth-plugin
         run: |
-          gcloud components install gke-gcloud-auth-plugin --quiet || { echo "Plugin installation failed"; exit 1; }
-          gcloud components update --quiet
-          which gke-gcloud-auth-plugin || { echo "Plugin not found"; exit 1; }
-      - name: Configure kubectl for stage cluster
+          sudo curl -Lo /usr/local/bin/gke-gcloud-auth-plugin \
+            https://storage.googleapis.com/gke-release/gke-gcloud-auth-plugin/linux/amd64/gke-gcloud-auth-plugin
+          sudo chmod +x /usr/local/bin/gke-gcloud-auth-plugin
+          echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
+
+      - name: Configure kubectl
         run: |
-          gcloud container clusters get-credentials stage-app-presente --region us-east1 --project app-chamada-5706
-      - name: Deploy to stage
+          gcloud container clusters get-credentials stage-app-presente \
+            --region us-east1 \
+            --project app-chamada-5706
+
+      - name: Set environment variables
         run: |
-          # Check if files exist
-          if [ ! -f "k8s/stage/frontend-deployment.yaml" ]; then
-            echo "Error: k8s/stage/frontend-deployment.yaml not found"
-            exit 1
+          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
+            echo "NAMESPACE=production-app-presente" >> $GITHUB_ENV
+          else
+            echo "NAMESPACE=stage-app-presente" >> $GITHUB_ENV
           fi
-          if [ ! -f "k8s/stage/frontend-service.yaml" ]; then
-            echo "Error: k8s/stage/frontend-service.yaml not found"
-            exit 1
-          fi
+
+      - name: Generate and apply Kubernetes manifests (Service + Deployment)
+        run: |
+          export NAMESPACE=${{ env.NAMESPACE }}
+
+          envsubst < k8s/stage/frontend-service.template.yaml > frontend-service.yaml
+          envsubst < k8s/stage/frontend-deployment.template.yaml > frontend-deployment.yaml
+
+          echo "=== frontend-service.yaml ==="
+          cat frontend-service.yaml
+          echo "=== frontend-deployment.yaml ==="
+          cat frontend-deployment.yaml
 
           kubectl apply -f k8s/stage/frontend-deployment.yaml -n stage-app-presente
           kubectl apply -f k8s/stage/frontend-service.yaml -n stage-app-presente
@@ -138,10 +179,8 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
         with:
           node-version: '18'
           cache: 'npm'
@@ -154,9 +193,12 @@ jobs:
       - name: Build and push Docker image
         run: |
           COMMIT_SHA=${{ github.sha }}
-          docker build --no-cache -t guilherme310402/app_presente_front:$COMMIT_SHA .
+          docker build --no-cache \
+            -t guilherme310402/app_presente_front:$COMMIT_SHA \
+            -t guilherme310402/app_presente_front:latest .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
           docker push guilherme310402/app_presente_front:$COMMIT_SHA
+          docker push guilherme310402/app_presente_front:latest
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
