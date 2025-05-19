@@ -3,11 +3,14 @@ name: Frontend CI/CD
 on:
   push:
     branches:
-      - dev
       - main
+      - dev
+      - 'release/**'
   pull_request:
     branches:
-      - release/*
+      - main
+      - dev
+  workflow_dispatch:
 
 jobs:
   test:
@@ -34,10 +37,11 @@ jobs:
           path: |
             **/test-results/**
             **/*.xml
+
   build:
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'pull_request' && startsWith(github.ref, 'refs/heads/release/')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,9 +58,10 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build --no-cache -t guilherme310402/app_presente_front:${GITHUB_SHA::7} .
+          COMMIT_SHA=${{ github.sha }}
+          docker build --no-cache -t guilherme310402/app_presente_front:$COMMIT_SHA .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push guilherme310402/app_presente_front:${GITHUB_SHA::7}
+          docker push guilherme310402/app_presente_front:$COMMIT_SHA
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -67,19 +72,11 @@ jobs:
           path: |
             .next/
             out/
-      - name: Notify on release
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          slack-bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: 'YOUR_SLACK_CHANNEL_ID' # Replace with actual Slack channel ID
-          text: "New release version built: ${{ github.sha }} for app_presente_front"
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
   deploy-stage:
     runs-on: ubuntu-latest
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -96,9 +93,10 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build --no-cache -t guilherme310402/app_presente_front:latest .
+          COMMIT_SHA=${{ github.sha }}
+          docker build --no-cache -t guilherme310402/app_presente_front:$COMMIT_SHA .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push guilherme310402/app_presente_front:latest
+          docker push guilherme310402/app_presente_front:$COMMIT_SHA
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -128,14 +126,16 @@ jobs:
             exit 1
           fi
 
-          kubectl -n stage-app-presente apply -f k8s/stage/frontend-deployment.yaml -f k8s/stage/frontend-service.yaml
-          kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:latest
+          kubectl apply -f k8s/stage/frontend-deployment.yaml -n stage-app-presente
+          kubectl apply -f k8s/stage/frontend-service.yaml -n stage-app-presente
+          kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:$COMMIT_SHA
           kubectl patch deployment app-presente-front -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
           kubectl rollout restart deployment/app-presente-front -n stage-app-presente
           kubectl rollout status deployment/app-presente-front -n stage-app-presente --timeout=120s
+
   deploy-production:
     runs-on: ubuntu-latest
-    needs: test
+    needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout code
@@ -153,9 +153,10 @@ jobs:
         run: npm run build
       - name: Build and push Docker image
         run: |
-          docker build --no-cache -t guilherme310402/app_presente_front:latest .
+          COMMIT_SHA=${{ github.sha }}
+          docker build --no-cache -t guilherme310402/app_presente_front:$COMMIT_SHA .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push guilherme310402/app_presente_front:latest
+          docker push guilherme310402/app_presente_front:$COMMIT_SHA
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -175,8 +176,41 @@ jobs:
           gcloud container clusters get-credentials devops-cluster --region us-central1 --project app-chamada-5706
       - name: Deploy to production
         run: |
-          kubectl -n production-app-presente apply -f k8s/production/frontend-deployment.yaml -f k8s/production/frontend-service.yaml
-          kubectl set image deployment/app-presente-front -n production-app-presente app-presente-front=guilherme310402/app_presente_front:latest
+          # Check if files exist
+          if [ ! -f "k8s/production/frontend-deployment.yaml" ]; then
+            echo "Error: k8s/production/frontend-deployment.yaml not found"
+            exit 1
+          fi
+          if [ ! -f "k8s/production/frontend-service.yaml" ]; then
+            echo "Error: k8s/production/frontend-service.yaml not found"
+            exit 1
+          fi
+
+          kubectl apply -f k8s/production/frontend-deployment.yaml -n production-app-presente
+          kubectl apply -f k8s/production/frontend-service.yaml -n production-app-presente
+          kubectl set image deployment/app-presente-front -n production-app-presente app-presente-front=guilherme310402/app_presente_front:$COMMIT_SHA
           kubectl patch deployment app-presente-front -n production-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
           kubectl rollout restart deployment/app-presente-front -n production-app-presente
           kubectl rollout status deployment/app-presente-front -n production-app-presente --timeout=120s
+
+  release-notification:
+    if: startsWith(github.ref, 'refs/heads/release/')
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Send email notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: saler.scl@gmail.com
+          password: ${{ secrets.EMAIL_PASS }}
+          subject: "🚀 Nova versão em pré-produção disponível (Frontend)"
+          to: saler.cez@gmail.com
+          from: "Presente CI/CD <saler.scl@gmail.com>"
+          html_body: |
+            <h2>Nova versão em pré-produção (Frontend)</h2>
+            <p>Uma nova imagem foi construída e enviada para o Docker Hub com base no branch <strong>${{ github.ref_name }}</strong>.</p>
+            <p><strong>Imagem:</strong> guilherme310402/app_presente_front:$COMMIT_SHA</p>
+            <hr/>
+            <p>Workflow: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Ver execução</a></p>
