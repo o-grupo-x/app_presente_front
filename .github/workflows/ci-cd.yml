@@ -247,7 +247,7 @@ jobs:
           server_port: 587
           username: saler.scl@gmail.com
           password: ${{ secrets.EMAIL_PASS }}
-          subject: "🚀 Nova versão em pré-produção disponível (Frontend)"
+          subject: "🚀 Nova versão em pré-produção disponível (Frontend-stage)"
           to: saler.cez@gmail.com
           from: "Presente CI/CD <saler.scl@gmail.com>"
           html_body: |
