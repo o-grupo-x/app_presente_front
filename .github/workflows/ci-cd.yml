@@ -26,122 +26,240 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-
       - name: Install dependencies
         working-directory: ./
         run: npm ci
-
       - name: Run linting
         working-directory: ./
         run: npm run lint
-
       - name: Run tests
         working-directory: ./
         run: npm test
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            **/test-results/**
+            **/*.xml
 
   build:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/')
     runs-on: ubuntu-latest
     needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-
       - name: Install dependencies
         working-directory: ./
         run: npm ci
-
+      - name: Build frontend
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: npm run build
       - name: Build and push Docker image
         run: |
-          COMMIT_SHA=${{ github.sha }}
-          docker build --no-cache -t guilherme310402/app_presente_front:$COMMIT_SHA .
+          COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
+          docker build --no-cache \
+            -t guilherme310402/app_presente_front:$COMMIT_SHA \
+            -t guilherme310402/app_presente_front:latest .
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker push guilherme310402/app_presente_front:$COMMIT_SHA
+          docker push guilherme310402/app_presente_front:$COMMIT_SHA || { echo "Failed to push Docker image with COMMIT_SHA"; exit 1; }
+          docker push guilherme310402/app_presente_front:latest || { echo "Failed to push Docker image with latest tag"; exit 1; }
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            .next/
+            out/
 
-  deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/')
+  deploy-stage:
     runs-on: ubuntu-latest
     needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/'))
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - id: commit
-        run: echo "SHORT_SHA=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-
-      - id: 'auth'
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GOOGLE_CLOUD_KEYS }}
+          credentials_json: '${{ secrets.GOOGLE_CLOUD_KEYS }}'
           project_id: app-chamada-5706
-
       - name: Set up Cloud SDK and kubectl
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: app-chamada-5706
           install_components: 'kubectl'
-
       - name: Install gke-gcloud-auth-plugin
         run: |
           sudo curl -Lo /usr/local/bin/gke-gcloud-auth-plugin \
             https://storage.googleapis.com/gke-release/gke-gcloud-auth-plugin/linux/amd64/gke-gcloud-auth-plugin
           sudo chmod +x /usr/local/bin/gke-gcloud-auth-plugin
           echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
-
       - name: Configure kubectl
         run: |
           gcloud container clusters get-credentials stage-app-presente \
             --region us-east1 \
             --project app-chamada-5706
-
-      - name: Set environment variables
+      - name: Deploy to stage
         run: |
-          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
-            echo "NAMESPACE=production-app-presente" >> $GITHUB_ENV
-          else
-            echo "NAMESPACE=stage-app-presente" >> $GITHUB_ENV
+          # Check if files exist
+          if [ ! -f "k8s/stage/frontend-deployment.yaml" ]; then
+            echo "Error: k8s/stage/frontend-deployment.yaml not found"
+            exit 1
+          fi
+          if [ ! -f "k8s/stage/frontend-service.yaml" ]; then
+            echo "Error: k8s/stage/frontend-service.yaml not found"
+            exit 1
           fi
 
-      - name: Generate and apply Kubernetes manifests (Service + Deployment)
+          COMMIT_SHA=${{ env.COMMIT_SHA }}
+          kubectl apply -f k8s/stage/frontend-deployment.yaml -n stage-app-presente
+          kubectl apply -f k8s/stage/frontend-service.yaml -n stage-app-presente
+          kubectl set image deployment/app-presente-front -n stage-app-presente app-presente-front=guilherme310402/app_presente_front:$COMMIT_SHA
+          kubectl patch deployment/app-presente-front -n stage-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
+          kubectl rollout restart deployment/app-presente-front -n stage-app-presente
+
+          # Debug: Check pod status before rollout
+          echo "Checking pod status before rollout..."
+          kubectl get pods -n stage-app-presente
+
+          # Debug: Describe pods in Terminating state (if any)
+          echo "Describing pods in Terminating state (if any)..."
+          TERMINATING_PODS=$(kubectl get pods -n stage-app-presente --field-selector=status.phase!=Running -o name | grep app-presente-front || true)
+          if [ ! -z "$TERMINATING_PODS" ]; then
+            for pod in $TERMINATING_PODS; do
+              echo "Describing $pod..."
+              kubectl describe $pod -n stage-app-presente
+            done
+          else
+            echo "No pods in Terminating state found."
+          fi
+
+          # Force delete stuck pods if they don't terminate within 60 seconds
+          echo "Waiting 60 seconds for pods to terminate..."
+          sleep 60
+          TERMINATING_PODS=$(kubectl get pods -n stage-app-presente --field-selector=status.phase!=Running -o name | grep app-presente-front || true)
+          if [ ! -z "$TERMINATING_PODS" ]; then
+            echo "Force deleting stuck pods..."
+            for pod in $TERMINATING_PODS; do
+              kubectl delete $pod -n stage-app-presente --force --grace-period=0
+            done
+          fi
+
+          # Debug: Check pod status after attempting to resolve termination
+          echo "Checking pod status after termination handling..."
+          kubectl get pods -n stage-app-presente
+
+          # Debug: Describe the deployment
+          echo "Describing deployment..."
+          kubectl describe deployment app-presente-front -n stage-app-presente
+
+          # Wait for rollout with increased timeout
+          echo "Waiting for rollout to complete..."
+          kubectl rollout status deployment/app-presente-front -n stage-app-presente --timeout=600s
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CLOUD_KEYS }}'
+          project_id: app-chamada-5706
+      - name: Set up Cloud SDK and kubectl
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: app-chamada-5706
+          install_components: 'kubectl'
+      - name: Install gke-gcloud-auth-plugin
         run: |
-          export NAMESPACE=${{ env.NAMESPACE }}
-
-          envsubst < k8s/stage/frontend-service.template.yaml > frontend-service.yaml
-          envsubst < k8s/stage/frontend-deployment.template.yaml > frontend-deployment.yaml
-
-          echo "=== frontend-service.yaml ==="
-          cat frontend-service.yaml
-          echo "=== frontend-deployment.yaml ==="
-          cat frontend-deployment.yaml
-
-          kubectl apply -f frontend-service.yaml
-          kubectl apply -f frontend-deployment.yaml
-
-      - name: Deploy to Kubernetes
+          sudo curl -Lo /usr/local/bin/gke-gcloud-auth-plugin \
+            https://storage.googleapis.com/gke-release/gke-gcloud-auth-plugin/linux/amd64/gke-gcloud-auth-plugin
+          sudo chmod +x /usr/local/bin/gke-gcloud-auth-plugin
+          echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
+      - name: Configure kubectl
         run: |
-          COMMIT_SHA=${{ github.sha }}
-          kubectl set image deployment/app-presente-front -n $NAMESPACE \
-            app-presente-front=guilherme310402/app_presente_front:$COMMIT_SHA \
-            --record
-          kubectl rollout status deployment/app-presente-front \
-            -n $NAMESPACE --timeout=120s
+          gcloud container clusters get-credentials devops-cluster \
+            --region us-central1 \
+            --project app-chamada-5706
+      - name: Deploy to production
+        run: |
+          # Check if files exist
+          if [ ! -f "k8s/production/frontend-deployment.yaml" ]; then
+            echo "Error: k8s/production/frontend-deployment.yaml not found"
+            exit 1
+          fi
+          if [ ! -f "k8s/production/frontend-service.yaml" ]; then
+            echo "Error: k8s/production/frontend-service.yaml not found"
+            exit 1
+          fi
+
+          COMMIT_SHA=${{ env.COMMIT_SHA }}
+          kubectl apply -f k8s/production/frontend-deployment.yaml -n production-app-presente
+          kubectl apply -f k8s/production/frontend-service.yaml -n production-app-presente
+          kubectl set image deployment/app-presente-front -n production-app-presente app-presente-front=guilherme310402/app_presente_front:$COMMIT_SHA
+          kubectl patch deployment/app-presente-front -n production-app-presente -p '{"spec":{"template":{"spec":{"nodeSelector":{"kubernetes.io/arch":"amd64"}}}}}'
+          kubectl rollout restart deployment/app-presente-front -n production-app-presente
+
+          # Debug: Check pod status before rollout
+          echo "Checking pod status before rollout..."
+          kubectl get pods -n production-app-presente
+
+          # Debug: Describe pods in Terminating state (if any)
+          echo "Describing pods in Terminating state (if any)..."
+          TERMINATING_PODS=$(kubectl get pods -n production-app-presente --field-selector=status.phase!=Running -o name | grep app-presente-front || true)
+          if [ ! -z "$TERMINATING_PODS" ]; then
+            for pod in $TERMINATING_PODS; do
+              echo "Describing $pod..."
+              kubectl describe $pod -n production-app-presente
+            done
+          else
+            echo "No pods in Terminating state found."
+          fi
+
+          # Force delete stuck pods if they don't terminate within 60 seconds
+          echo "Waiting 60 seconds for pods to terminate..."
+          sleep 60
+          TERMINATING_PODS=$(kubectl get pods -n production-app-presente --field-selector=status.phase!=Running -o name | grep app-presente-front || true)
+          if [ ! -z "$TERMINATING_PODS" ]; then
+            echo "Force deleting stuck pods..."
+            for pod in $TERMINATING_PODS; do
+              kubectl delete $pod -n production-app-presente --force --grace-period=0
+            done
+          fi
+
+          # Debug: Check pod status after attempting to resolve termination
+          echo "Checking pod status after termination handling..."
+          kubectl get pods -n production-app-presente
+
+          # Debug: Describe the deployment
+          echo "Describing deployment..."
+          kubectl describe deployment app-presente-front -n production-app-presente
+
+          # Wait for rollout with increased timeout
+          echo "Waiting for rollout to complete..."
+          kubectl rollout status deployment/app-presente-front -n production-app-presente --timeout=600s
 
   release-notification:
     if: startsWith(github.ref, 'refs/heads/release/')
@@ -161,6 +279,6 @@ jobs:
           html_body: |
             <h2>Nova versão em pré-produção (Frontend)</h2>
             <p>Uma nova imagem foi construída e enviada para o Docker Hub com base no branch <strong>${{ github.ref_name }}</strong>.</p>
-            <p><strong>Imagem:</strong> guilherme310402/app_presente_front:$COMMIT_SHA</p>
+            <p><strong>Imagem:</strong> guilherme310402/app_presente_front:${{ env.COMMIT_SHA }}</p>
             <hr/>
             <p>Workflow: <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Ver execução</a></p>
