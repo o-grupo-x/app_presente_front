@@ -119,20 +119,22 @@ jobs:
             echo "NAMESPACE=stage-app-presente" >> $GITHUB_ENV
           fi
 
-      - name: Generate and apply Kubernetes manifests (Service + Deployment)
+      - name: Apply Kubernetes manifests (Service + Deployment)
         run: |
           export NAMESPACE=${{ env.NAMESPACE }}
 
-          envsubst < k8s/stage/frontend-service.template.yaml > frontend-service.yaml
-          envsubst < k8s/stage/frontend-deployment.template.yaml > frontend-deployment.yaml
+          DEPLOY_DIR="k8s/production"
+          if [[ "$NAMESPACE" == "stage-app-presente" ]]; then
+            DEPLOY_DIR="k8s/stage"
+          fi
 
-          echo "=== frontend-service.yaml ==="
-          cat frontend-service.yaml
-          echo "=== frontend-deployment.yaml ==="
-          cat frontend-deployment.yaml
+          echo "=== $DEPLOY_DIR/frontend-service.yaml ==="
+          cat $DEPLOY_DIR/frontend-service.yaml
+          echo "=== $DEPLOY_DIR/frontend-deployment.yaml ==="
+          cat $DEPLOY_DIR/frontend-deployment.yaml
 
-          kubectl apply -f frontend-service.yaml
-          kubectl apply -f frontend-deployment.yaml
+          kubectl apply -f $DEPLOY_DIR/frontend-service.yaml
+          kubectl apply -f $DEPLOY_DIR/frontend-deployment.yaml
 
       - name: Deploy to Kubernetes
         run: |
