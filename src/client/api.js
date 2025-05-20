@@ -6,7 +6,7 @@ const backend = "https://api.odeiojava.com.br/api";
 
 const httpClient = axios.create({
   // baseURL: process.env.NEXT_PUBLIC_BACK
-  baseURL: backend,
+  baseURL: "/api",
 });
 
 const api = {
