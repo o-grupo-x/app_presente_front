@@ -14,9 +14,9 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  GAR_LOCATION: us-central1
-  CLUSTER_NAME: ${{ secrets.GKE_CLUSTER_NAME }}
-  GKE_ZONE: ${{ secrets.GKE_ZONE }}
+  GAR_LOCATION: us-central1-a
+  CLUSTER_NAME: app-prod-fa395f7c
+  GKE_ZONE: us-central1-a
   DEPLOYMENT_NAME: app-presente-front
   NAMESPACE: app-chamada-production
   DOCKER_IMAGE: guilherme310402/app_presente_front
@@ -153,7 +153,7 @@ jobs:
       - name: Configure kubectl for production
         run: |
           gcloud container clusters get-credentials app-prod-fa395f7c \
-            --region us-central1 \
+            --region us-central1-a \
             --project app-chamada-5706
       - name: Deploy to production
         run: |
