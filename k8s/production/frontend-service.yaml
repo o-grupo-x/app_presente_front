@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: app-presente-front
-  namespace: production-app-presente
+  namespace: app-chamada-production
 spec:
   selector:
     app: app-presente-front
