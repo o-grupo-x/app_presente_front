@@ -18,6 +18,7 @@ env:
   CLUSTER_NAME: ${{ secrets.GKE_CLUSTER_NAME }}
   GKE_ZONE: ${{ secrets.GKE_ZONE }}
   DEPLOYMENT_NAME: app-presente-front
+  NAMESPACE: app-chamada-production
   DOCKER_IMAGE: guilherme310402/app_presente_front
 
 jobs:
@@ -151,17 +152,17 @@ jobs:
           echo "USE_GKE_GCLOUD_AUTH_PLUGIN=True" >> $GITHUB_ENV
       - name: Configure kubectl for production
         run: |
-          gcloud container clusters get-credentials devops-cluster \
+          gcloud container clusters get-credentials app-prod-fa395f7c \
             --region us-central1 \
             --project app-chamada-5706
       - name: Deploy to production
         run: |
           COMMIT_SHA=${{ needs.build.outputs.commit_sha }}
-          kubectl apply -f k8s/production/frontend-deployment.yaml -n production-app-presente
-          kubectl apply -f k8s/production/frontend-service.yaml -n production-app-presente
-          kubectl set image deployment/app-presente-front -n production-app-presente app-presente-front=guilherme310402/app_presente_front:$COMMIT_SHA
-          kubectl rollout restart deployment/app-presente-front -n production-app-presente
-          kubectl rollout status deployment/app-presente-front -n production-app-presente --timeout=300s
+          kubectl apply -f k8s/production/frontend-deployment.yaml -n app-chamada-production
+          kubectl apply -f k8s/production/frontend-service.yaml -n app-chamada-production
+          kubectl set image deployment/app-presente-front -n app-chamada-production app-presente-front=guilherme310402/app_presente_front:$COMMIT_SHA
+          kubectl rollout restart deployment/app-presente-front -n app-chamada-production
+          kubectl rollout status deployment/app-presente-front -n app-chamada-production --timeout=300s
 
   release-notification:
     if: startsWith(github.ref, 'refs/heads/release/')
