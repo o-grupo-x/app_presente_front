@@ -18,7 +18,7 @@ export const UserProvider = ({ children }) => {
       const decodedUser = jwtDecode(token);
       setUser(decodedUser);
     } else {
-      axios.get('http://localhost:8000/api/usuario', { withCredentials: true })
+      axios.get('http://app-presente-back-service.stage-app-chamada-production.svc.cluster.local:8000/api/usuario', { withCredentials: true })
         .then(response => {
           if (response.data) {
             setUser(response.data);
