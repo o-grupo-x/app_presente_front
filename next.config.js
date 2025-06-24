@@ -5,12 +5,12 @@ require("dotenv").config();
 const nextConfig = {
   reactStrictMode: true,
 
-  // 🚀 Adiciona rewrites para redirecionar chamadas de API
+  // Adiciona rewrites para redirecionar chamadas de API
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://app-presente-back-service.stage-app-chamada-production.svc.cluster.local:8000/api/:path*", // atualize com o IP correto
+        destination: "http://app-presente-back-service.app-chamada-production.svc.cluster.local:8000/api/:path*",
       },
     ];
   },
