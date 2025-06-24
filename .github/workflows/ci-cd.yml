@@ -56,7 +56,7 @@ jobs:
       # Autentica no *PROJETO DE PRODUÇÃO* (onde ficará o Artifact Registry)
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON_PROD }}   # ← novo secret
+          credentials_json: ${{ secrets.GOOGLE_CLOUD_KEYS }}   # ← novo secret
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID_PROD }}
@@ -107,7 +107,7 @@ jobs:
     steps:
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON_PROD }}
+          credentials_json: ${{ secrets.GOOGLE_CLOUD_KEYS }}
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID_PROD }}
