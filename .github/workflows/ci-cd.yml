@@ -10,7 +10,7 @@ on:
 
 env:
   # ── Stage ────────────────────────────────────────────────────────
-  CLUSTER_STAGE:       stage-app-presente
+  CLUSTER_STAGE:       app-chamada-stage
   CLUSTER_STAGE_ZONE:  us-west1-a
   PROJECT_ID_STAGE:    app-chamada-stage
   NAMESPACE_STAGE:     stage-app-presente
