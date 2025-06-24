@@ -5,16 +5,16 @@ on:
   push:
     branches: [main, dev]
   pull_request:
-    branches: [main, dev]
+    branches: [main, dev]      # roda só teste/build; deploy bloqueado
   workflow_dispatch:
 
 env:
-  # ── Cluster Stage ────────────────────────────────────────────────
+  # ── Stage ────────────────────────────────────────────────────────
   CLUSTER_STAGE:       stage-app-presente
   CLUSTER_STAGE_ZONE:  us-west1-a
   PROJECT_ID_STAGE:    app-chamada-stage
   NAMESPACE_STAGE:     stage-app-presente
-  # ── Cluster Prod ────────────────────────────────────────────────
+  # ── Prod ─────────────────────────────────────────────────────────
   CLUSTER_PROD:        app-prod-fa395f7c
   CLUSTER_PROD_ZONE:   us-central1-a
   PROJECT_ID_PROD:     app-chamada-5706
@@ -23,18 +23,16 @@ env:
   DEPLOYMENT_NAME:     app-presente-front
   DOCKER_IMAGE:        guilherme310402/app_presente_front
 
-jobs:
 # ───────────────────────────────────────────────────────────────────
 # 1) TESTES
 # ───────────────────────────────────────────────────────────────────
+jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: npm
+        with: { node-version: 18, cache: npm }
       - run: npm ci
       - run: npm run lint
       - run: npm test
@@ -50,29 +48,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 2.1 – Preparar tag da imagem
-      - name: Prepare image tag
+      - name: Prepare tag
         id: prep
-        run: echo "tag=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+        run: echo "tag=${GITHUB_SHA::8}" >>"$GITHUB_OUTPUT"
 
-      # 2.2 – Set up Node para o build local (se o Dockerfile precisar)
       - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: npm
+        with: { node-version: 18, cache: npm }
       - run: npm ci
       - run: npm run build
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
-      # 2.3 – Docker Buildx + Login
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 2.4 – Build + Push
       - uses: docker/build-push-action@v5
         with:
           context: .
@@ -84,77 +76,79 @@ jobs:
           cache-to:   type=gha,mode=max
 
 # ───────────────────────────────────────────────────────────────────
-# 3) DEPLOY STAGE (branch dev)
+# 3) DEPLOY STAGE  (só em push → dev)
 # ───────────────────────────────────────────────────────────────────
   deploy-stage:
-    if: github.ref == 'refs/heads/dev'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON_STAGE }}
+
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID_STAGE }}
           install_components: kubectl
           export_default_credentials: true
+
       - run: gcloud components install gke-gcloud-auth-plugin -q
+
       - run: |
-          gcloud container clusters get-credentials $CLUSTER_STAGE \
-            --zone  $CLUSTER_STAGE_ZONE \
-            --project $PROJECT_ID_STAGE
-      - run: kubectl create namespace $NAMESPACE_STAGE || true
+          gcloud container clusters get-credentials "${{ env.CLUSTER_STAGE }}" \
+            --zone "${{ env.CLUSTER_STAGE_ZONE }}" \
+            --project "${{ env.PROJECT_ID_STAGE }}"
+
+      - run: kubectl create namespace "${{ env.NAMESPACE_STAGE }}" || true
+
       - run: |
-          kubectl apply -f k8s/stage/frontend-deployment.yaml -n $NAMESPACE_STAGE
-          kubectl apply -f k8s/stage/frontend-service.yaml    -n $NAMESPACE_STAGE
-          kubectl set image deployment/$DEPLOYMENT_NAME \
-            $DEPLOYMENT_NAME=$DOCKER_IMAGE:${{ needs.build.outputs.image_tag }} \
-            -n $NAMESPACE_STAGE
-          kubectl rollout status deployment/$DEPLOYMENT_NAME \
-            -n $NAMESPACE_STAGE --timeout=300s
-            
+          kubectl apply -f k8s/stage/frontend-deployment.yaml -n "${{ env.NAMESPACE_STAGE }}"
+          kubectl apply -f k8s/stage/frontend-service.yaml    -n "${{ env.NAMESPACE_STAGE }}"
+
+          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
+            ${{ env.DEPLOYMENT_NAME }}=${{ env.DOCKER_IMAGE }}:${{ needs.build.outputs.image_tag }} \
+            -n "${{ env.NAMESPACE_STAGE }}"
+
+          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} \
+            -n "${{ env.NAMESPACE_STAGE }}" --timeout=300s
+
 # ───────────────────────────────────────────────────────────────────
-# 4) DEPLOY PROD (branch main)
+# 4) DEPLOY PROD   (só em push → main)
 # ───────────────────────────────────────────────────────────────────
   deploy-prod:
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
-
     steps:
-      # 4.1 – Checkout (precisa dos manifests k8s/)
       - uses: actions/checkout@v4
 
-      # 4.2 – Autenticação no GCP (projeto de produção)
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON_PROD }}
 
-      # 4.3 – Instala gcloud + kubectl + exporta credenciais
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID_PROD }}
           install_components: kubectl
           export_default_credentials: true
 
-      # 4.4 – Plugin de auth do GKE
       - run: gcloud components install gke-gcloud-auth-plugin -q
 
-      # 4.5 – Obtém credenciais do cluster
       - run: |
           gcloud container clusters get-credentials "${{ env.CLUSTER_PROD }}" \
-            --zone  "${{ env.CLUSTER_PROD_ZONE }}" \
+            --zone "${{ env.CLUSTER_PROD_ZONE }}" \
             --project "${{ env.PROJECT_ID_PROD }}"
 
-      # 4.6 – Deploy
       - run: |
           kubectl apply -f k8s/production/frontend-deployment.yaml -n "${{ env.NAMESPACE_PROD }}"
           kubectl apply -f k8s/production/frontend-service.yaml    -n "${{ env.NAMESPACE_PROD }}"
 
-          kubectl set image deployment/"${{ env.DEPLOYMENT_NAME }}" \
-            "${{ env.DEPLOYMENT_NAME }}"="${{ env.DOCKER_IMAGE }}:${{ needs.build.outputs.image_tag }}" \
+          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
+            ${{ env.DEPLOYMENT_NAME }}=${{ env.DOCKER_IMAGE }}:${{ needs.build.outputs.image_tag }} \
             -n "${{ env.NAMESPACE_PROD }}"
 
-          kubectl rollout status deployment/"${{ env.DEPLOYMENT_NAME }}" \
+          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} \
             -n "${{ env.NAMESPACE_PROD }}" --timeout=300s
