@@ -1,5 +1,5 @@
 # .github/workflows/frontend-ci-cd.yml
-name: Frontend CI/CD – Stage & Prod
+name: Frontend CI/CD – Stage & Prod (Docker Hub)
 
 on:
   push:
@@ -9,25 +9,23 @@ on:
   workflow_dispatch:
 
 env:
-  # ─── PROJECTOS/CLUSTERS ──────────────────────────────────────────────
-  PROJECT_ID_STAGE:  app-chamada-stage
-  PROJECT_ID_PROD:   app-chamada-5706
-  REGION:            us-central1
-  REPOSITORY:        frontend
+  CLUSTER_STAGE:          stage-app-presente
+  CLUSTER_STAGE_ZONE:     us-west1-a
+  PROJECT_ID_STAGE:       app-chamada-stage          # cluster stage
+  NAMESPACE_STAGE:        stage-app-presente
 
-  CLUSTER_STAGE:     stage-app-presente
-  CLUSTER_STAGE_ZONE: us-west1-a
-  NAMESPACE_STAGE:   stage-app-presente
+  CLUSTER_PROD:           app-prod-fa395f7c
+  CLUSTER_PROD_ZONE:      us-central1-a
+  PROJECT_ID_PROD:        app-chamada-5706           # cluster prod
+  NAMESPACE_PROD:         app-chamada-production
 
-  CLUSTER_PROD:      app-prod-fa395f7c
-  CLUSTER_PROD_ZONE: us-central1-a
-  NAMESPACE_PROD:    app-chamada-production
-
-  DEPLOYMENT_NAME:   app-presente-front
-  # ─────────────────────────────────────────────────────────────────────
+  DEPLOYMENT_NAME:        app-presente-front
+  DOCKER_IMAGE:           guilherme310402/app_presente_front
 
 jobs:
-# 1) TESTES ─────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────────
+# 1) TESTE
+# ───────────────────────────────────────────────────────────────────
   test:
     runs-on: ubuntu-latest
     steps:
@@ -38,12 +36,14 @@ jobs:
       - run: npm run lint
       - run: npm test
 
-# 2) BUILD ──────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────────
+# 2) BUILD & PUSH (Docker Hub)
+# ───────────────────────────────────────────────────────────────────
   build:
     needs: test
     runs-on: ubuntu-latest
     outputs:
-      image: ${{ steps.build.outputs.image }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -53,32 +53,32 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
-      # Autentica no *PROJETO DE PRODUÇÃO* (onde ficará o Artifact Registry)
-      - uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GOOGLE_CLOUD_KEYS }}   # ← novo secret
-      - uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID_PROD }}
-          export_default_credentials: true
-      - run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+      # Faz login no Docker Hub
+      - name: Docker Hub login
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | \
+             docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - id: build
+      # Build & push
+      - id: meta
         run: |
-          IMAGE=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID_PROD }}/${{ env.REPOSITORY }}/${{ env.REPOSITORY }}:${GITHUB_SHA::8}
-          echo "image=$IMAGE" >> $GITHUB_OUTPUT
-          docker build -t $IMAGE .
-          docker push  $IMAGE
+          TAG=${GITHUB_SHA::8}
+          docker build --no-cache -t $DOCKER_IMAGE:$TAG -t $DOCKER_IMAGE:latest .
+          docker push $DOCKER_IMAGE:$TAG
+          docker push $DOCKER_IMAGE:latest
+          echo "image_tag=$TAG" >> $GITHUB_OUTPUT
 
-# 3) DEPLOY STAGE ───────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────────
+# 3) DEPLOY STAGE (branch dev)
+# ───────────────────────────────────────────────────────────────────
   deploy-stage:
     if: github.ref == 'refs/heads/dev'
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # auth no projeto de stage
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON_STAGE }}  # ← outro secret
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON_STAGE }}
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID_STAGE }}
@@ -86,20 +86,22 @@ jobs:
           export_default_credentials: true
       - run: gcloud components install gke-gcloud-auth-plugin -q
       - run: |
-          gcloud container clusters get-credentials ${{ env.CLUSTER_STAGE }} \
-            --zone  ${{ env.CLUSTER_STAGE_ZONE }} \
-            --project ${{ env.PROJECT_ID_STAGE }}
-      - run: kubectl create namespace ${{ env.NAMESPACE_STAGE }} || true
+          gcloud container clusters get-credentials $CLUSTER_STAGE \
+            --zone  $CLUSTER_STAGE_ZONE \
+            --project $PROJECT_ID_STAGE
+      - run: kubectl create namespace $NAMESPACE_STAGE || true
       - run: |
-          kubectl apply -f k8s/stage/frontend-deployment.yaml -n ${{ env.NAMESPACE_STAGE }}
-          kubectl apply -f k8s/stage/frontend-service.yaml    -n ${{ env.NAMESPACE_STAGE }}
-          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
-            ${{ env.DEPLOYMENT_NAME }}=${{ needs.build.outputs.image }} \
-            -n ${{ env.NAMESPACE_STAGE }}
-          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} \
-            -n ${{ env.NAMESPACE_STAGE }} --timeout=300s
+          kubectl apply -f k8s/stage/frontend-deployment.yaml -n $NAMESPACE_STAGE
+          kubectl apply -f k8s/stage/frontend-service.yaml    -n $NAMESPACE_STAGE
+          kubectl set image deployment/$DEPLOYMENT_NAME \
+            $DEPLOYMENT_NAME=$DOCKER_IMAGE:${{ needs.build.outputs.image_tag }} \
+            -n $NAMESPACE_STAGE
+          kubectl rollout status deployment/$DEPLOYMENT_NAME \
+            -n $NAMESPACE_STAGE --timeout=300s
 
-# 4) DEPLOY PROD ────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────────
+# 4) DEPLOY PROD (branch main)
+# ───────────────────────────────────────────────────────────────────
   deploy-prod:
     if: github.ref == 'refs/heads/main'
     needs: build
@@ -107,7 +109,7 @@ jobs:
     steps:
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GOOGLE_CLOUD_KEYS }}
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON_PROD }}
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID_PROD }}
@@ -115,14 +117,14 @@ jobs:
           export_default_credentials: true
       - run: gcloud components install gke-gcloud-auth-plugin -q
       - run: |
-          gcloud container clusters get-credentials ${{ env.CLUSTER_PROD }} \
-            --zone  ${{ env.CLUSTER_PROD_ZONE }} \
-            --project ${{ env.PROJECT_ID_PROD }}
+          gcloud container clusters get-credentials $CLUSTER_PROD \
+            --zone  $CLUSTER_PROD_ZONE \
+            --project $PROJECT_ID_PROD
       - run: |
-          kubectl apply -f k8s/production/frontend-deployment.yaml -n ${{ env.NAMESPACE_PROD }}
-          kubectl apply -f k8s/production/frontend-service.yaml    -n ${{ env.NAMESPACE_PROD }}
-          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
-            ${{ env.DEPLOYMENT_NAME }}=${{ needs.build.outputs.image }} \
-            -n ${{ env.NAMESPACE_PROD }}
-          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} \
-            -n ${{ env.NAMESPACE_PROD }} --timeout=300s
+          kubectl apply -f k8s/production/frontend-deployment.yaml -n $NAMESPACE_PROD
+          kubectl apply -f k8s/production/frontend-service.yaml    -n $NAMESPACE_PROD
+          kubectl set image deployment/$DEPLOYMENT_NAME \
+            $DEPLOYMENT_NAME=$DOCKER_IMAGE:${{ needs.build.outputs.image_tag }} \
+            -n $NAMESPACE_PROD
+          kubectl rollout status deployment/$DEPLOYMENT_NAME \
+            -n $NAMESPACE_PROD --timeout=300s
