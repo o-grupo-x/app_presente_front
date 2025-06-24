@@ -113,7 +113,7 @@ jobs:
             -n $NAMESPACE_STAGE
           kubectl rollout status deployment/$DEPLOYMENT_NAME \
             -n $NAMESPACE_STAGE --timeout=300s
-
+            
 # ───────────────────────────────────────────────────────────────────
 # 4) DEPLOY PROD (branch main)
 # ───────────────────────────────────────────────────────────────────
@@ -121,25 +121,40 @@ jobs:
     if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
+
     steps:
+      # 4.1 – Checkout (precisa dos manifests k8s/)
+      - uses: actions/checkout@v4
+
+      # 4.2 – Autenticação no GCP (projeto de produção)
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON_PROD }}
+
+      # 4.3 – Instala gcloud + kubectl + exporta credenciais
       - uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ env.PROJECT_ID_PROD }}
           install_components: kubectl
           export_default_credentials: true
+
+      # 4.4 – Plugin de auth do GKE
       - run: gcloud components install gke-gcloud-auth-plugin -q
+
+      # 4.5 – Obtém credenciais do cluster
       - run: |
-          gcloud container clusters get-credentials $CLUSTER_PROD \
-            --zone  $CLUSTER_PROD_ZONE \
-            --project $PROJECT_ID_PROD
+          gcloud container clusters get-credentials "${{ env.CLUSTER_PROD }}" \
+            --zone  "${{ env.CLUSTER_PROD_ZONE }}" \
+            --project "${{ env.PROJECT_ID_PROD }}"
+
+      # 4.6 – Deploy
       - run: |
-          kubectl apply -f k8s/production/frontend-deployment.yaml -n $NAMESPACE_PROD
-          kubectl apply -f k8s/production/frontend-service.yaml    -n $NAMESPACE_PROD
-          kubectl set image deployment/$DEPLOYMENT_NAME \
-            $DEPLOYMENT_NAME=$DOCKER_IMAGE:${{ needs.build.outputs.image_tag }} \
-            -n $NAMESPACE_PROD
-          kubectl rollout status deployment/$DEPLOYMENT_NAME \
-            -n $NAMESPACE_PROD --timeout=300s
+          kubectl apply -f k8s/production/frontend-deployment.yaml -n "${{ env.NAMESPACE_PROD }}"
+          kubectl apply -f k8s/production/frontend-service.yaml    -n "${{ env.NAMESPACE_PROD }}"
+
+          kubectl set image deployment/"${{ env.DEPLOYMENT_NAME }}" \
+            "${{ env.DEPLOYMENT_NAME }}"="${{ env.DOCKER_IMAGE }}:${{ needs.build.outputs.image_tag }}" \
+            -n "${{ env.NAMESPACE_PROD }}"
+
+          kubectl rollout status deployment/"${{ env.DEPLOYMENT_NAME }}" \
+            -n "${{ env.NAMESPACE_PROD }}" --timeout=300s
