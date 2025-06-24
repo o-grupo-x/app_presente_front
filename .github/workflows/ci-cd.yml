@@ -10,7 +10,7 @@ on:
 
 env:
   # ── Stage ────────────────────────────────────────────────────────
-  CLUSTER_STAGE:       stage-app-presente
+  CLUSTER_STAGE:       app-chamada-stage
   CLUSTER_STAGE_ZONE:  us-west1-a
   PROJECT_ID_STAGE:    app-chamada-stage
   NAMESPACE_STAGE:     stage-app-presente
@@ -74,9 +74,8 @@ jobs:
             ${{ env.DOCKER_IMAGE }}:latest
           cache-from: type=gha
           cache-to:   type=gha,mode=max
-
 # ───────────────────────────────────────────────────────────────────
-# 3) DEPLOY STAGE  (push → dev)
+# 3) DEPLOY STAGE  (push → dev)          ★  APENAS ESTE BLOCO MUDOU
 # ───────────────────────────────────────────────────────────────────
   deploy-stage:
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
@@ -101,8 +100,17 @@ jobs:
             --zone "${{ env.CLUSTER_STAGE_ZONE }}" \
             --project "${{ env.PROJECT_ID_STAGE }}"
 
+      # 1️⃣ garante que o namespace exista
       - run: kubectl create namespace "${{ env.NAMESPACE_STAGE }}" || true
 
+      # 2️⃣ cria/atualiza o Secret (namespace já existe)
+      - name: Ensure frontend secret (stage)
+        run: |
+          kubectl create secret generic app-presente-secrets \
+            --from-literal=NEXT_PUBLIC_API_URL='${{ secrets.NEXT_PUBLIC_API_URL_STAGE }}' \
+            -n "${{ env.NAMESPACE_STAGE }}" --dry-run=client -o yaml | kubectl apply -f -
+
+      # 3️⃣ aplica manifests e faz rollout
       - run: |
           kubectl apply -f k8s/stage/frontend-deployment.yaml -n "${{ env.NAMESPACE_STAGE }}"
           kubectl apply -f k8s/stage/frontend-service.yaml    -n "${{ env.NAMESPACE_STAGE }}"
