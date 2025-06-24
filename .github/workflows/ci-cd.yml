@@ -5,7 +5,7 @@ on:
   push:
     branches: [main, dev]
   pull_request:
-    branches: [main, dev]      # roda só teste/build; deploy bloqueado
+    branches: [main, dev]      # roda testes/build sem deploy
   workflow_dispatch:
 
 env:
@@ -23,10 +23,10 @@ env:
   DEPLOYMENT_NAME:     app-presente-front
   DOCKER_IMAGE:        guilherme310402/app_presente_front
 
+jobs:
 # ───────────────────────────────────────────────────────────────────
 # 1) TESTES
 # ───────────────────────────────────────────────────────────────────
-jobs:
   test:
     runs-on: ubuntu-latest
     steps:
@@ -76,7 +76,7 @@ jobs:
           cache-to:   type=gha,mode=max
 
 # ───────────────────────────────────────────────────────────────────
-# 3) DEPLOY STAGE  (só em push → dev)
+# 3) DEPLOY STAGE  (push → dev)
 # ───────────────────────────────────────────────────────────────────
   deploy-stage:
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
@@ -87,7 +87,7 @@ jobs:
 
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON_STAGE }}
+          credentials_json: ${{ secrets.GOOGLE_CLOUD_KEYS }}
 
       - uses: google-github-actions/setup-gcloud@v2
         with:
@@ -96,7 +96,6 @@ jobs:
           export_default_credentials: true
 
       - run: gcloud components install gke-gcloud-auth-plugin -q
-
       - run: |
           gcloud container clusters get-credentials "${{ env.CLUSTER_STAGE }}" \
             --zone "${{ env.CLUSTER_STAGE_ZONE }}" \
@@ -107,16 +106,14 @@ jobs:
       - run: |
           kubectl apply -f k8s/stage/frontend-deployment.yaml -n "${{ env.NAMESPACE_STAGE }}"
           kubectl apply -f k8s/stage/frontend-service.yaml    -n "${{ env.NAMESPACE_STAGE }}"
-
           kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
             ${{ env.DEPLOYMENT_NAME }}=${{ env.DOCKER_IMAGE }}:${{ needs.build.outputs.image_tag }} \
             -n "${{ env.NAMESPACE_STAGE }}"
-
           kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} \
             -n "${{ env.NAMESPACE_STAGE }}" --timeout=300s
 
 # ───────────────────────────────────────────────────────────────────
-# 4) DEPLOY PROD   (só em push → main)
+# 4) DEPLOY PROD   (push → main)
 # ───────────────────────────────────────────────────────────────────
   deploy-prod:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -127,7 +124,7 @@ jobs:
 
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON_PROD }}
+          credentials_json: ${{ secrets.GOOGLE_CLOUD_KEYS }}
 
       - uses: google-github-actions/setup-gcloud@v2
         with:
@@ -136,7 +133,6 @@ jobs:
           export_default_credentials: true
 
       - run: gcloud components install gke-gcloud-auth-plugin -q
-
       - run: |
           gcloud container clusters get-credentials "${{ env.CLUSTER_PROD }}" \
             --zone "${{ env.CLUSTER_PROD_ZONE }}" \
@@ -145,10 +141,8 @@ jobs:
       - run: |
           kubectl apply -f k8s/production/frontend-deployment.yaml -n "${{ env.NAMESPACE_PROD }}"
           kubectl apply -f k8s/production/frontend-service.yaml    -n "${{ env.NAMESPACE_PROD }}"
-
           kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
             ${{ env.DEPLOYMENT_NAME }}=${{ env.DOCKER_IMAGE }}:${{ needs.build.outputs.image_tag }} \
             -n "${{ env.NAMESPACE_PROD }}"
-
           kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} \
             -n "${{ env.NAMESPACE_PROD }}" --timeout=300s
