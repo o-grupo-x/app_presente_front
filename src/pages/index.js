@@ -26,7 +26,7 @@ const Welcome = () => {
 APP PRESENTE
 
       </h1>
-      <p>Faça login para começar!</p>
+      <p>Faça login para testar!</p>
       <motion.button 
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}

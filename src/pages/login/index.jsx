@@ -49,7 +49,7 @@ export default function SignIn() {
       <div className={styles.card}>
         <div className={styles.avatar_center}>
           <Image src={logo} className={styles.avatar} alt="Logo do APP PRESENTE" />
-          <h1 className={styles.title}>Bem Vindo ao Stage</h1>
+          <h1 className={styles.title}>Bem Vindo SALER PASSOU AQUI</h1>
         </div>
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.inputGroup}>
