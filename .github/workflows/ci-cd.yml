@@ -15,7 +15,7 @@ env:
   PROJECT_ID_STAGE: app-chamada-stage
   NAMESPACE_STAGE: stage-app-presente
   # ── Prod ─────────────────────────────────────────────────────────
-  CLUSTER_PROD: app-prod-fa395f7c
+  CLUSTER_PROD: app-prod-56b02c6e
   CLUSTER_PROD_ZONE: us-central1-a
   PROJECT_ID_PROD: app-chamada-5706
   NAMESPACE_PROD: app-chamada-production
