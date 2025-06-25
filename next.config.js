@@ -7,6 +7,7 @@ const nextConfig = {
 
   // Adiciona rewrites para redirecionar chamadas de API
   async rewrites() {
+    const backendHost = process.env.BACKEND_API_HOST || "http://localhost:8000"; // fallback local
     return [
       {
         source: "/api/:path*",
