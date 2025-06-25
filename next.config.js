@@ -10,7 +10,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://app-presente-back-service.app-chamada-production.svc.cluster.local:8000/api/:path*",
+        destination: "${backendHost}:8000/api/:path*",
       },
     ];
   },
