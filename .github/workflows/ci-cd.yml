@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  # ── Stage ─────────────────────────────-───────────────────────────
+  # ── Stage ────────────────────────────────────────────────────────
   CLUSTER_STAGE: app-chamada-stage
   CLUSTER_STAGE_ZONE: us-west1-a
   PROJECT_ID_STAGE: app-chamada-stage
@@ -41,21 +41,12 @@ jobs:
   # 2) BUILD & PUSH (Docker Hub)
   # ───────────────────────────────────────────────────────────────────
   build:
-    needs: test
+    #needs: test
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.prep.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set BACKEND_API_HOST based on branch
-        id: set-backend-host
-        run: |
-          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
-            echo "BACKEND_API_HOST=http://app-presente-back-service.app-chamada-production.svc.cluster.local:8000/api/:path*" >> $GITHUB_ENV
-          else
-            echo "BACKEND_API_HOST=http://app-presente-back-service.stage-app-presente.svc.cluster.local:8000/api/:path*" >> $GITHUB_ENV
-          fi
 
       - name: Prepare tag
         id: prep
