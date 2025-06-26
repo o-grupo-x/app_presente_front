@@ -57,7 +57,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: ${{ env.BACKEND_API_HOST }}
+          NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL  }}
 
 
       - uses: docker/setup-buildx-action@v3
